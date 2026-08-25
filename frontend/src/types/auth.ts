@@ -47,3 +47,9 @@ export interface LoginResponse {
     user: AuthenticatedUser
   }
 }
+
+export interface CurrentUserResponse {
+  data: {
+    user: AuthenticatedUser
+  }
+}

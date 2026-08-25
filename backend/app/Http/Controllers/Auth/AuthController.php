@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use RuntimeException;
@@ -120,6 +121,25 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Đăng xuất thành công.',
+        ]);
+    }
+
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'display_name' => $user->display_name,
+                    'email' => $user->email,
+                    'is_private' => $user->is_private,
+                    'is_verified' => $user->is_verified,
+                    'created_at' => $user->created_at,
+                ],
+            ],
         ]);
     }
 }

@@ -1,45 +1,65 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import {
+  getCurrentUser,
   login as loginRequest,
   logout as logoutRequest,
 } from '@/services/authService'
 
-import { getAuthToken } from '@/services/authToken'
+import { getAuthToken, removeAuthToken } from '@/services/authToken'
 
-import type {
-  AuthenticatedUser,
-  LoginPayload,
-} from '@/types/auth'
+import type { AuthenticatedUser, LoginPayload } from '@/types/auth'
 
-export const useAuthStore = defineStore(
-  'auth',
-  () => {
-    const user = ref<AuthenticatedUser | null>(null)
-    const isAuthenticated = ref(
-      getAuthToken() !== null,
-    )
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref<AuthenticatedUser | null>(null)
 
-    async function login(
-      payload: LoginPayload
-    ): Promise<void> {
-      const response = await loginRequest(payload)
-      user.value = response.data.user
-      isAuthenticated.value = true
-    }
+  const isInitialized = ref(false)
 
-    async function logout(): Promise<void> {
-      await logoutRequest()
+  const isAuthenticated = computed(() => user.value !== null)
+
+  async function initialize(): Promise<void> {
+    const token = getAuthToken()
+
+    if (!token) {
       user.value = null
-      isAuthenticated.value = false
+      isInitialized.value = true
+
+      return
     }
 
-    return {
-      user,
-      isAuthenticated,
-      login,
-      logout,
+    try {
+      const response = await getCurrentUser()
+
+      user.value = response.data.user
+    } catch {
+      removeAuthToken()
+      user.value = null
+    } finally {
+      isInitialized.value = true
     }
   }
-)
+
+  async function login(payload: LoginPayload): Promise<void> {
+    const response = await loginRequest(payload)
+    user.value = response.data.user
+  }
+
+  async function logout(): Promise<void> {
+    try {
+      await logoutRequest()
+    } finally {
+      removeAuthToken()
+      user.value = null
+    }
+  }
+
+  return {
+    user,
+    isInitialized,
+    isAuthenticated,
+    initialize,
+    login,
+    logout,
+  }
+})
