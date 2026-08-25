@@ -2,6 +2,8 @@ import api from './api'
 
 import type {
   CurrentUserResponse,
+  ForgotPasswordPayload,
+  ForgotPasswordResponse,
   RegisterPayload,
   RegisterResponse,
   LoginPayload,
@@ -33,6 +35,17 @@ export async function logout(): Promise<void> {
 
 export async function getCurrentUser(): Promise<CurrentUserResponse> {
   const response = await api.get<CurrentUserResponse>('/auth/me')
+
+  return response.data
+}
+
+export async function forgotPassword(
+  payload: ForgotPasswordPayload,
+): Promise<ForgotPasswordResponse> {
+  const response = await api.post<ForgotPasswordResponse>(
+    '/auth/forgot-password',
+    payload,
+  )
 
   return response.data
 }

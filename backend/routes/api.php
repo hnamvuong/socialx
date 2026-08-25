@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\PasswordController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -20,6 +21,11 @@ Route::prefix('auth')->group(function () {
         AuthController::class,
         'login',
     ]);
+
+    Route::post('/forgot-password', [
+        PasswordController::class,
+        'forgotPassword',
+    ])->middleware('throttle:5,1');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [
