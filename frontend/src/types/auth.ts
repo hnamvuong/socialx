@@ -23,3 +23,27 @@ export interface RegisterResponse {
     user: RegisteredUser
   }
 }
+
+export interface LoginPayload {
+  email: string
+  password: string
+}
+
+export interface AuthenticatedUser {
+  id: number
+  username: string
+  display_name: string
+  email: string
+  is_private: boolean
+  is_verified: boolean
+  created_at: string
+}
+
+export interface LoginResponse {
+  message: string
+
+  data: {
+    token: string
+    user: AuthenticatedUser
+  }
+}
