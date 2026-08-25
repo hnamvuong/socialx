@@ -1,0 +1,112 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    container_name: socialx-backend
+
+    working_dir: /var/www/html
+
+    volumes:
+      - ./backend:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+
+    ports:
+      - "18000:8000"
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+      redis:
+        condition: service_healthy
+
+    networks:
+      - socialx-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    container_name: socialx-frontend
+
+    working_dir: /app
+
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+
+    ports:
+      - "15173:5173"
+
+    depends_on:
+      - backend
+
+    networks:
+      - socialx-network
+
+  mysql:
+    image: mysql:8.4
+
+    container_name: socialx-mysql
+
+    environment:
+      MYSQL_DATABASE: socialx
+      MYSQL_USER: socialx
+      MYSQL_PASSWORD: socialx_password
+      MYSQL_ROOT_PASSWORD: root_password
+
+    ports:
+      - "13306:3306"
+
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-proot_password"
+        ]
+
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - socialx-network
+
+  redis:
+    image: redis:7-alpine
+
+    container_name: socialx-redis
+
+    ports:
+      - "16379:6379"
+
+    volumes:
+      - redis-data:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+    networks:
+      - socialx-network
+
+volumes:
+  mysql-data:
+  redis-data:
+  frontend-node-modules:
+
+networks:
+  socialx-network:
+    driver: bridge
