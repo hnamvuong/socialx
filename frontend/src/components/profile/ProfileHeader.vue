@@ -23,6 +23,10 @@ defineProps<{
         />
       </div>
 
+      <div class="profile-header__actions">
+        <slot name="actions" />
+      </div>
+
       <div class="profile-header__identity">
         <div class="profile-header__name-row">
           <h1 class="profile-header__name">

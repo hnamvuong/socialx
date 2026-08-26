@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  computed,
   ref,
   watch,
 } from 'vue'
@@ -9,6 +10,9 @@ import ProfileDetails from '@/components/profile/ProfileDetails.vue'
 import ProfileHeader from '@/components/profile/ProfileHeader.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSkeleton from '@/components/ui/AppSkeleton.vue'
+import EditProfileModal from '@/components/profile/EditProfileModal.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import {
   getUserProfile,
 } from '@/services/userService'
@@ -70,6 +74,33 @@ async function loadProfile(): Promise<void> {
   } finally {
     loading.value = false
   }
+}
+
+const authStore = useAuthStore()
+
+const toastStore = useToastStore()
+
+const editProfileOpen = ref(false)
+
+const isOwnProfile = computed(() => {
+  return (
+    !!user.value &&
+    !!authStore.user &&
+    user.value.username ===
+      authStore.user.username
+  )
+})
+
+function handleProfileUpdated(
+  updatedUser: PublicUserProfile,
+): void {
+  user.value = updatedUser
+
+  editProfileOpen.value = false
+
+  toastStore.success(
+    'Đã cập nhật hồ sơ.',
+  )
 }
 
 watch(
@@ -137,7 +168,21 @@ watch(
       <template v-else-if="user">
         <ProfileHeader
           :user="user"
-        />
+        >
+          <template
+            v-if="isOwnProfile"
+            #actions
+          >
+            <AppButton
+              variant="secondary"
+              @click="
+                editProfileOpen = true
+              "
+            >
+              Chỉnh sửa hồ sơ
+            </AppButton>
+          </template>
+        </ProfileHeader>
 
         <ProfileDetails
           :user="user"
@@ -181,6 +226,17 @@ watch(
         </AppButton>
       </div>
     </section>
+    <EditProfileModal
+      v-if="user && isOwnProfile"
+      :open="editProfileOpen"
+      :user="user"
+      @close="
+        editProfileOpen = false
+      "
+      @updated="
+        handleProfileUpdated
+      "
+    />
   </MainLayout>
 </template>
 

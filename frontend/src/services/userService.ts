@@ -1,6 +1,8 @@
 import api from './api'
 
 import type {
+  UpdateProfilePayload,
+  UpdateProfileResponse,
   UserProfileResponse,
 } from '@/types/user'
 
@@ -10,6 +12,18 @@ export async function getUserProfile(
   const response =
     await api.get<UserProfileResponse>(
       `/users/${encodeURIComponent(username)}`,
+    )
+
+  return response.data
+}
+
+export async function updateProfile(
+  payload: UpdateProfilePayload,
+): Promise<UpdateProfileResponse> {
+  const response =
+    await api.patch<UpdateProfileResponse>(
+      '/profile',
+      payload,
     )
 
   return response.data

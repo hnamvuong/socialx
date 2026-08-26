@@ -17,3 +17,16 @@ export interface UserProfileResponse {
     user: PublicUserProfile
   }
 }
+
+export interface UpdateProfilePayload {
+  display_name: string
+  bio: string | null
+  location: string | null
+  website: string | null
+}
+
+export interface UpdateProfileResponse {
+  data: {
+    user: PublicUserProfile
+  }
+}

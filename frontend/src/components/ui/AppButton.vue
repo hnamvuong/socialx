@@ -2,6 +2,7 @@
 withDefaults(
   defineProps<{
     type?: 'button' | 'submit' | 'reset'
+    form?: string
     variant?: 'primary' | 'secondary' | 'danger' | 'ghost'
     size?: 'sm' | 'md' | 'lg'
     disabled?: boolean
@@ -26,6 +27,7 @@ defineEmits<{
 <template>
   <button
     :type="type"
+    :form="form"
     class="app-button"
     :class="[
       `app-button--${variant}`,

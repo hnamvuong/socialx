@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,10 +48,12 @@ Route::prefix('auth')->group(function () {
             AuthController::class,
             'me',
         ]);
+
         Route::post('/logout', [
             AuthController::class,
             'logout',
         ]);
+
         Route::post('/email/verification-notification', [
             EmailVerificationController::class,
             'resend',
@@ -62,3 +65,13 @@ Route::get('/users/{username}', [
     UserProfileController::class,
     'show',
 ]);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::patch(
+        '/profile',
+        [
+            ProfileController::class,
+            'update',
+        ]
+    );
+});
