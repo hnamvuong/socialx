@@ -36,3 +36,8 @@ import { RouterLink } from 'vue-router'
     </button>
   </nav>
 </template>
+
+<style
+  lang="scss"
+  src="@/assets/styles/components/layout/BottomNavigation.scss"
+></style>

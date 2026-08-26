@@ -1,0 +1,39 @@
+.theme-switcher {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  &__label {
+    color:
+      var(--color-text-secondary);
+
+    font-size: 13px;
+  }
+
+  &__select {
+    min-height: 34px;
+
+    padding: 0 10px;
+
+    border:
+      1px solid var(--color-border);
+
+    border-radius: 9999px;
+
+    outline: none;
+
+    background:
+      var(--color-surface);
+
+    color:
+      var(--color-text-primary);
+
+    cursor: pointer;
+
+    &:focus {
+      border-color:
+        var(--color-text-secondary);
+    }
+  }
+}

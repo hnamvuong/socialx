@@ -1,0 +1,47 @@
+@use '@/assets/styles/mixins' as *;
+
+.app-shell {
+  min-height: 100vh;
+
+  &__container {
+    display: grid;
+
+    grid-template-columns:
+      260px
+      minmax(0, 600px)
+      350px;
+
+    width: 100%;
+    max-width: 1210px;
+    min-height: 100vh;
+
+    margin: 0 auto;
+
+    @include tablet {
+      grid-template-columns:
+        88px
+        minmax(0, 600px);
+
+      max-width: 688px;
+    }
+
+    @include mobile {
+      display: block;
+
+      width: 100%;
+      max-width: none;
+    }
+  }
+}
+
+.main-feed {
+  min-width: 0;
+
+  border-right:
+    1px solid var(--color-border);
+
+  @include mobile {
+    width: 100%;
+    border-right: 0;
+  }
+}

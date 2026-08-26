@@ -26,3 +26,8 @@ import ThemeSwitcher from '@/components/theme/ThemeSwitcher.vue'
     </section>
   </MainLayout>
 </template>
+
+<style
+  lang="scss"
+  src="@/assets/styles/views/HomeView.scss"
+></style>

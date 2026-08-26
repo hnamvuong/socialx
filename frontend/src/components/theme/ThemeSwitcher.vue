@@ -44,3 +44,8 @@ function handleChange(
     </select>
   </label>
 </template>
+
+<style
+  lang="scss"
+  src="@/assets/styles/components/theme/ThemeSwitcher.scss"
+></style>

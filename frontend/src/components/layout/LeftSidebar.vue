@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import AppButton from '@/components/ui/AppButton.vue'
 </script>
 
 <template>
@@ -83,9 +84,10 @@ import { RouterLink } from 'vue-router'
         </span>
       </nav>
 
-      <button
-        type="button"
+      <AppButton
         class="create-post-button"
+        size="lg"
+        block
         disabled
       >
         <span class="create-post-button__full">
@@ -95,7 +97,12 @@ import { RouterLink } from 'vue-router'
         <span class="create-post-button__compact">
           +
         </span>
-      </button>
+      </AppButton>
     </div>
   </aside>
 </template>
+
+<style
+  lang="scss"
+  src="@/assets/styles/components/layout/LeftSidebar.scss"
+></style>

@@ -1,0 +1,61 @@
+@use '@/assets/styles/mixins' as *;
+
+.bottom-navigation {
+  display: none;
+
+  @include mobile {
+    position: fixed;
+
+    right: 0;
+    bottom: 0;
+    left: 0;
+
+    z-index: 100;
+
+    display: grid;
+
+    grid-template-columns:
+      repeat(4, 1fr);
+
+    min-height: 64px;
+
+    border-top:
+      1px solid var(--color-border);
+
+    background:
+      var(--color-background);
+
+    &__item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border: 0;
+
+      background: transparent;
+
+      color:
+        var(--color-text-secondary);
+
+      font-size: 13px;
+      font-weight: 600;
+
+      &.router-link-active {
+        color:
+          var(--color-text-primary);
+
+        font-weight: 800;
+      }
+
+      &:disabled {
+        cursor: default;
+      }
+    }
+  }
+}
+
+@include mobile {
+  body {
+    padding-bottom: 64px;
+  }
+}

@@ -27,3 +27,8 @@
     </div>
   </aside>
 </template>
+
+<style
+  lang="scss"
+  src="@/assets/styles/components/layout/RightSidebar.scss"
+></style>

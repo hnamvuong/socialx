@@ -19,3 +19,8 @@ import RightSidebar from '@/components/layout/RightSidebar.vue'
     <BottomNavigation />
   </div>
 </template>
+
+<style
+  lang="scss"
+  src="@/assets/styles/layouts/MainLayout.scss"
+></style>
