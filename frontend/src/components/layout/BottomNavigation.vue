@@ -1,5 +1,17 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+
+const profilePath = computed(() => {
+  if (!authStore.user?.username) {
+    return null
+  }
+
+  return `/@${authStore.user.username}`
+})
 </script>
 
 <template>
@@ -27,7 +39,16 @@ import { RouterLink } from 'vue-router'
       Thông báo
     </button>
 
+    <RouterLink
+      v-if="profilePath"
+      :to="profilePath"
+      class="bottom-navigation__item"
+    >
+      Hồ sơ
+    </RouterLink>
+
     <button
+      v-else
       type="button"
       class="bottom-navigation__item"
       disabled

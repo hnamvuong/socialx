@@ -1,0 +1,102 @@
+@use '@/assets/styles/mixins' as *;
+
+.profile-header {
+  &__cover {
+    width: 100%;
+    aspect-ratio: 3 / 1;
+
+    background:
+      var(--color-surface-secondary);
+  }
+
+  &__content {
+    position: relative;
+
+    padding:
+      76px
+      16px
+      12px;
+  }
+
+  &__avatar-wrapper {
+    position: absolute;
+
+    top: -68px;
+    left: 16px;
+
+    padding: 4px;
+
+    border-radius: 50%;
+
+    background:
+      var(--color-background);
+  }
+
+  &__identity {
+    min-width: 0;
+  }
+
+  &__name-row {
+    display: flex;
+    align-items: center;
+
+    gap: 6px;
+  }
+
+  &__name {
+    overflow: hidden;
+
+    margin: 0;
+
+    font-size: 22px;
+    font-weight: 800;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__verified {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    width: 18px;
+    height: 18px;
+
+    border-radius: 50%;
+
+    background:
+      var(--color-info);
+
+    color: #ffffff;
+
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  &__username {
+    margin-top: 2px;
+
+    color:
+      var(--color-text-secondary);
+
+    font-size: 15px;
+  }
+
+  @include mobile {
+    &__content {
+      padding-top: 58px;
+    }
+
+    &__avatar-wrapper {
+      top: -52px;
+    }
+
+    &__avatar-wrapper .app-avatar {
+      width: 104px !important;
+      height: 104px !important;
+    }
+  }
+}

@@ -1,6 +1,18 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppButton from '@/components/ui/AppButton.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+
+const profilePath = computed(() => {
+  if (!authStore.user?.username) {
+    return null
+  }
+
+  return `/@${authStore.user.username}`
+})
 </script>
 
 <template>
@@ -73,7 +85,20 @@ import AppButton from '@/components/ui/AppButton.vue'
           </span>
         </span>
 
-        <span class="main-navigation__item main-navigation__item--disabled">
+        <RouterLink
+          v-if="profilePath"
+          :to="profilePath"
+          class="main-navigation__item"
+        >
+          <span class="main-navigation__icon">
+            P
+          </span>
+
+          <span class="main-navigation__label">
+            Hồ sơ
+          </span>
+        </RouterLink>
+        <span v-else class="main-navigation__item main-navigation__item--disabled">
           <span class="main-navigation__icon">
             P
           </span>

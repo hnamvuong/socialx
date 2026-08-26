@@ -1,0 +1,109 @@
+@use '@/assets/styles/mixins' as *;
+
+.profile-page {
+  min-height: 100vh;
+
+  &__topbar {
+    position: sticky;
+
+    top: 0;
+    z-index: 20;
+
+    display: flex;
+    align-items: center;
+
+    min-height: 56px;
+
+    padding:
+      8px
+      16px;
+
+    border-bottom:
+      1px solid var(--color-border);
+
+    background:
+      var(--color-overlay-background);
+
+    backdrop-filter:
+      blur(12px);
+  }
+
+  &__topbar-username {
+    margin-top: 2px;
+
+    color:
+      var(--color-text-secondary);
+
+    font-size: 12px;
+  }
+
+  &__loading-cover {
+    width: 100%;
+
+    aspect-ratio: 3 / 1;
+  }
+
+  &__loading-content {
+    display: flex;
+    flex-direction: column;
+
+    gap: 12px;
+
+    padding:
+      20px
+      16px;
+  }
+
+  &__state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    gap: 12px;
+
+    padding:
+      80px
+      24px;
+
+    text-align: center;
+
+    h1 {
+      margin: 0;
+
+      font-size: 24px;
+    }
+
+    p {
+      max-width: 420px;
+
+      margin: 0;
+
+      color:
+        var(--color-text-secondary);
+
+      line-height: 1.5;
+    }
+  }
+
+  &__content-placeholder {
+    padding:
+      40px
+      24px;
+
+    border-top:
+      1px solid var(--color-border);
+
+    color:
+      var(--color-text-secondary);
+
+    text-align: center;
+
+    font-size: 14px;
+  }
+
+  @include mobile {
+    &__topbar {
+      min-height: 52px;
+    }
+  }
+}
