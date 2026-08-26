@@ -1,0 +1,34 @@
+.app-avatar {
+  flex: 0 0 auto;
+
+  overflow: hidden;
+
+  border-radius: 50%;
+
+  background:
+    var(--color-surface-secondary);
+
+  color:
+    var(--color-text-secondary);
+
+  &__image {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+  }
+
+  &__fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    height: 100%;
+
+    font-size: 40%;
+    font-weight: 800;
+  }
+}
