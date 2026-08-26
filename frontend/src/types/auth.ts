@@ -38,6 +38,7 @@ export interface AuthenticatedUser {
   is_private: boolean
   is_verified: boolean
   created_at: string
+  roles: string[]
 }
 
 export interface LoginResponse {

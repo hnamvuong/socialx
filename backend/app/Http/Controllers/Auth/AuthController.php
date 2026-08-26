@@ -42,6 +42,8 @@ class AuthController extends Controller
 
             $user->roles()->attach($userRole->id);
 
+            $user->load('roles');
+
             $user->refresh();
 
             return $user;
@@ -93,6 +95,8 @@ class AuthController extends Controller
             ], 403);
         }
 
+        $user->loadMissing('roles');
+
         $token = $user
             ->createToken('socialx-web')
             ->plainTextToken;
@@ -112,6 +116,9 @@ class AuthController extends Controller
                     'is_private' => $user->is_private,
                     'is_verified' => $user->is_verified,
                     'created_at' => $user->created_at,
+                    'roles' => $user->roles
+                        ->pluck('name')
+                        ->values(),
                 ],
             ],
         ]);
@@ -132,6 +139,8 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
+        $user->loadMissing('roles');
+
         return response()->json([
             'data' => [
                 'user' => [
@@ -143,6 +152,9 @@ class AuthController extends Controller
                     'is_private' => $user->is_private,
                     'is_verified' => $user->is_verified,
                     'created_at' => $user->created_at,
+                    'roles' => $user->roles
+                        ->pluck('name')
+                        ->values(),
                 ],
             ],
         ]);
