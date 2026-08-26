@@ -4,10 +4,12 @@ import type {
   CurrentUserResponse,
   ForgotPasswordPayload,
   ForgotPasswordResponse,
-  RegisterPayload,
-  RegisterResponse,
   LoginPayload,
   LoginResponse,
+  RegisterPayload,
+  RegisterResponse,
+  ResetPasswordPayload,
+  ResetPasswordResponse,
 } from '@/types/auth'
 
 import { removeAuthToken, setAuthToken } from './authToken'
@@ -44,6 +46,17 @@ export async function forgotPassword(
 ): Promise<ForgotPasswordResponse> {
   const response = await api.post<ForgotPasswordResponse>(
     '/auth/forgot-password',
+    payload,
+  )
+
+  return response.data
+}
+
+export async function resetPassword(
+  payload: ResetPasswordPayload,
+): Promise<ResetPasswordResponse> {
+  const response = await api.post<ResetPasswordResponse>(
+    '/auth/reset-password',
     payload,
   )
 

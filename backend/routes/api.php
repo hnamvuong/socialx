@@ -27,6 +27,11 @@ Route::prefix('auth')->group(function () {
         'forgotPassword',
     ])->middleware('throttle:5,1');
 
+    Route::post('/reset-password', [
+        PasswordController::class,
+        'resetPassword',
+    ]);
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [
             AuthController::class,

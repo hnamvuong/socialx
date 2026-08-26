@@ -61,3 +61,14 @@ export interface ForgotPasswordPayload {
 export interface ForgotPasswordResponse {
   message: string
 }
+
+export interface ResetPasswordPayload {
+  token: string
+  email: string
+  password: string
+  password_confirmation: string
+}
+
+export interface ResetPasswordResponse {
+  message: string
+}
