@@ -8,6 +8,7 @@ import type {
   LoginResponse,
   RegisterPayload,
   RegisterResponse,
+  ResendVerificationResponse,
   ResetPasswordPayload,
   ResetPasswordResponse,
 } from '@/types/auth'
@@ -59,6 +60,15 @@ export async function resetPassword(
     '/auth/reset-password',
     payload,
   )
+
+  return response.data
+}
+
+export async function resendVerificationEmail(): Promise<ResendVerificationResponse> {
+  const response =
+    await api.post<ResendVerificationResponse>(
+      '/auth/email/verification-notification',
+    )
 
   return response.data
 }

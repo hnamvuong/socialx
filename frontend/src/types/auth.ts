@@ -34,6 +34,7 @@ export interface AuthenticatedUser {
   username: string
   display_name: string
   email: string
+  email_verified_at: string | null
   is_private: boolean
   is_verified: boolean
   created_at: string
@@ -70,5 +71,9 @@ export interface ResetPasswordPayload {
 }
 
 export interface ResetPasswordResponse {
+  message: string
+}
+
+export interface ResendVerificationResponse {
   message: string
 }

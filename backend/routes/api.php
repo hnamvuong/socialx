@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +33,14 @@ Route::prefix('auth')->group(function () {
         'resetPassword',
     ]);
 
+    Route::get('/auth/email/verify/{id}/{hash}', [
+        EmailVerificationController::class,
+        'verify',
+    ])->middleware([
+        'signed',
+        'throttle:6,1',
+    ])->name('verification.verify');
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [
             AuthController::class,
@@ -41,5 +50,9 @@ Route::prefix('auth')->group(function () {
             AuthController::class,
             'logout',
         ]);
+        Route::post('/email/verification-notification', [
+            EmailVerificationController::class,
+            'resend',
+        ])->middleware('throttle:6,1');
     });
 });

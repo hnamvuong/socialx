@@ -47,6 +47,8 @@ class AuthController extends Controller
             return $user;
         });
 
+        $user->sendEmailVerificationNotification();
+
         return response()->json([
             'message' => 'Đăng ký tài khoản thành công.',
 
@@ -56,6 +58,7 @@ class AuthController extends Controller
                     'username' => $user->username,
                     'display_name' => $user->display_name,
                     'email' => $user->email,
+                    'email_verified_at' => $user->email_verified_at,
                     'is_private' => $user->is_private,
                     'is_verified' => $user->is_verified,
                     'created_at' => $user->created_at,
@@ -105,6 +108,7 @@ class AuthController extends Controller
                     'username' => $user->username,
                     'display_name' => $user->display_name,
                     'email' => $user->email,
+                    'email_verified_at' => $user->email_verified_at,
                     'is_private' => $user->is_private,
                     'is_verified' => $user->is_verified,
                     'created_at' => $user->created_at,
@@ -135,6 +139,7 @@ class AuthController extends Controller
                     'username' => $user->username,
                     'display_name' => $user->display_name,
                     'email' => $user->email,
+                    'email_verified_at' => $user->email_verified_at,
                     'is_private' => $user->is_private,
                     'is_verified' => $user->is_verified,
                     'created_at' => $user->created_at,
