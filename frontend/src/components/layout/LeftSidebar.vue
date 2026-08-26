@@ -9,7 +9,13 @@ import { RouterLink } from 'vue-router'
         to="/"
         class="brand"
       >
-        SocialX
+        <span class="brand__full">
+          SocialX
+        </span>
+
+        <span class="brand__compact">
+          SX
+        </span>
       </RouterLink>
 
       <nav class="main-navigation">
@@ -17,27 +23,63 @@ import { RouterLink } from 'vue-router'
           to="/"
           class="main-navigation__item"
         >
-          Trang chủ
+          <span class="main-navigation__icon">
+            H
+          </span>
+
+          <span class="main-navigation__label">
+            Trang chủ
+          </span>
         </RouterLink>
 
         <span class="main-navigation__item main-navigation__item--disabled">
-          Khám phá
+          <span class="main-navigation__icon">
+            K
+          </span>
+
+          <span class="main-navigation__label">
+            Khám phá
+          </span>
         </span>
 
         <span class="main-navigation__item main-navigation__item--disabled">
-          Thông báo
+          <span class="main-navigation__icon">
+            T
+          </span>
+
+          <span class="main-navigation__label">
+            Thông báo
+          </span>
         </span>
 
         <span class="main-navigation__item main-navigation__item--disabled">
-          Tin nhắn
+          <span class="main-navigation__icon">
+            M
+          </span>
+
+          <span class="main-navigation__label">
+            Tin nhắn
+          </span>
         </span>
 
         <span class="main-navigation__item main-navigation__item--disabled">
-          Dấu trang
+          <span class="main-navigation__icon">
+            B
+          </span>
+
+          <span class="main-navigation__label">
+            Dấu trang
+          </span>
         </span>
 
         <span class="main-navigation__item main-navigation__item--disabled">
-          Hồ sơ
+          <span class="main-navigation__icon">
+            P
+          </span>
+
+          <span class="main-navigation__label">
+            Hồ sơ
+          </span>
         </span>
       </nav>
 
@@ -46,7 +88,13 @@ import { RouterLink } from 'vue-router'
         class="create-post-button"
         disabled
       >
-        Đăng bài
+        <span class="create-post-button__full">
+          Đăng bài
+        </span>
+
+        <span class="create-post-button__compact">
+          +
+        </span>
       </button>
     </div>
   </aside>

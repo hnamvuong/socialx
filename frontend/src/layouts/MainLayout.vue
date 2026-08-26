@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BottomNavigation from '@/components/layout/BottomNavigation.vue';
 import LeftSidebar from '@/components/layout/LeftSidebar.vue'
 import RightSidebar from '@/components/layout/RightSidebar.vue'
 </script>
@@ -14,5 +15,7 @@ import RightSidebar from '@/components/layout/RightSidebar.vue'
 
       <RightSidebar />
     </div>
+
+    <BottomNavigation />
   </div>
 </template>

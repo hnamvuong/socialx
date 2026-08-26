@@ -28,6 +28,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
   background: #ffffff;
 }
 
@@ -277,4 +278,150 @@ a {
 
   font-size: 14px;
   line-height: 1.5;
+}
+
+.brand__compact,
+.main-navigation__icon,
+.create-post-button__compact,
+.bottom-navigation {
+  display: none;
+}
+
+@media (max-width: 1199px) {
+  .app-shell__container {
+    grid-template-columns:
+      88px
+      minmax(0, 600px);
+
+    max-width: 688px;
+  }
+
+  .right-sidebar {
+    display: none;
+  }
+
+  .left-sidebar__inner {
+    align-items: center;
+    padding: 12px;
+  }
+
+  .brand__full {
+    display: none;
+  }
+
+  .brand__compact {
+    display: inline;
+  }
+
+  .main-navigation__label {
+    display: none;
+  }
+
+  .main-navigation__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 24px;
+    height: 24px;
+
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .main-navigation__item {
+    justify-content: center;
+
+    width: 52px;
+    min-height: 52px;
+    padding: 0;
+  }
+
+  .create-post-button {
+    width: 52px;
+    min-height: 52px;
+    padding: 0;
+  }
+
+  .create-post-button__full {
+    display: none;
+  }
+
+  .create-post-button__compact {
+    display: inline;
+
+    font-size: 24px;
+    line-height: 1;
+  }
+}
+
+@media (max-width: 767px) {
+  body {
+    padding-bottom: 64px;
+  }
+
+  .app-shell__container {
+    display: block;
+
+    width: 100%;
+    max-width: none;
+  }
+
+  .left-sidebar,
+  .right-sidebar {
+    display: none;
+  }
+
+  .main-feed {
+    width: 100%;
+    border-right: 0;
+  }
+
+  .feed-header {
+    min-height: 52px;
+  }
+
+  .feed-placeholder {
+    padding: 48px 20px;
+  }
+
+  .bottom-navigation {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+
+    min-height: 64px;
+
+    border-top: 1px solid #eff3f4;
+
+    background: #ffffff;
+  }
+
+  .bottom-navigation__item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 0;
+
+    background: transparent;
+    color: #536471;
+
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .bottom-navigation__item.router-link-active {
+    color: #0f1419;
+    font-weight: 800;
+  }
+
+  .bottom-navigation__item:disabled {
+    cursor: default;
+  }
 }
