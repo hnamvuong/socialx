@@ -7,6 +7,7 @@ import App from './App.vue'
 import router from './router'
 
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from './stores/theme.ts'
 
 async function bootstrap(): Promise<void> {
   const app = createApp(App)
@@ -15,6 +16,10 @@ async function bootstrap(): Promise<void> {
 
   app.use(pinia)
   app.use(router)
+
+  const themeStore = useThemeStore(pinia)
+
+  themeStore.initialize()
 
   const authStore = useAuthStore(pinia)
 

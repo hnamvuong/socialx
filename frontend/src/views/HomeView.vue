@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MainLayout from '@/layouts/MainLayout.vue'
+import ThemeSwitcher from '@/components/theme/ThemeSwitcher.vue'
 </script>
 
 <template>
@@ -9,6 +10,8 @@ import MainLayout from '@/layouts/MainLayout.vue'
         <h1 class="feed-header__title">
           Trang chủ
         </h1>
+
+        <ThemeSwitcher />
       </header>
 
       <div class="feed-placeholder">
