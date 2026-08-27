@@ -90,4 +90,9 @@ Route::middleware('auth:sanctum')->group(function () {
     ])->middleware(
         'permission:post.create'
     );
+
+    Route::patch('/posts/{post}', [
+        PostController::class,
+        'update',
+    ]);
 });

@@ -1,13 +1,13 @@
 import api from './api'
 
 import type {
-  CreatePostResponse,
+  PostResponse,
 } from '@/types/post'
 
 export async function createPost(
   content: string,
   media: File[],
-): Promise<CreatePostResponse> {
+): Promise<PostResponse> {
   const formData =
     new FormData()
 
@@ -29,9 +29,25 @@ export async function createPost(
   })
 
   const response =
-    await api.post<CreatePostResponse>(
+    await api.post<PostResponse>(
       '/posts',
       formData,
+    )
+
+  return response.data
+}
+
+export async function updatePost(
+  postId: number,
+  content: string,
+): Promise<PostResponse> {
+  const response =
+    await api.patch<PostResponse>(
+      `/posts/${postId}`,
+      {
+        content:
+          content.trim() || null,
+      },
     )
 
   return response.data

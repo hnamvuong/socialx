@@ -21,13 +21,14 @@ export interface Post {
   id: number
   content: string | null
   created_at: string
+  updated_at: string
 
   user: PostAuthor
 
   media: PostMedia[]
 }
 
-export interface CreatePostResponse {
+export interface PostResponse {
   data: {
     post: Post
   }

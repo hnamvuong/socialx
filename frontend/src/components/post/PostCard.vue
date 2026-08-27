@@ -1,13 +1,23 @@
 <script setup lang="ts">
 import {
   computed,
+  ref,
 } from 'vue'
 import {
   RouterLink,
 } from 'vue-router'
 import AppAvatar from '@/components/ui/AppAvatar.vue'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppDropdown from '@/components/ui/AppDropdown.vue'
+import EditPostModal from '@/components/post/EditPostModal.vue'
 import PostActions from '@/components/post/PostActions.vue'
 import PostMediaGrid from '@/components/post/PostMediaGrid.vue'
+import {
+  useAuthStore,
+} from '@/stores/auth'
+import {
+  useToastStore,
+} from '@/stores/toast'
 import {
   formatFullDateTime,
   formatPostTime,
@@ -19,6 +29,16 @@ import type {
 const props = defineProps<{
   post: Post
 }>()
+
+const emit = defineEmits<{
+  updated: [post: Post]
+}>()
+
+const authStore = useAuthStore()
+
+const toastStore = useToastStore()
+
+const editOpen = ref(false)
 
 const profilePath =
   computed(() => {
@@ -36,6 +56,38 @@ const fullDateTime =
   computed(() => {
     return formatFullDateTime(
       props.post.created_at,
+    )
+  })
+
+const isOwnPost =
+  computed(() => {
+    return (
+      !!authStore.user
+      && authStore.user.id
+        === props.post.user.id
+    )
+  })
+
+function handleUpdated(
+  post: Post,
+): void {
+  editOpen.value = false
+
+  emit(
+    'updated',
+    post,
+  )
+
+  toastStore.success(
+    'Đã cập nhật bài viết.',
+  )
+}
+
+const wasEdited =
+  computed(() => {
+    return (
+      props.post.updated_at
+      !== props.post.created_at
     )
   })
 </script>
@@ -105,7 +157,37 @@ const fullDateTime =
           >
             {{ formattedTime }}
           </time>
+
+          <span
+            v-if="wasEdited"
+            class="post-card__edited"
+          >
+            · đã chỉnh sửa
+          </span>
         </div>
+
+        <AppDropdown
+          v-if="isOwnPost"
+        >
+          <template #trigger>
+            <AppButton
+              variant="ghost"
+              size="sm"
+              class="post-card__menu-trigger"
+              aria-label="Tùy chọn bài viết"
+            >
+              •••
+            </AppButton>
+          </template>
+
+          <button
+            type="button"
+            class="post-card__menu-item"
+            @click="editOpen = true"
+          >
+            Chỉnh sửa
+          </button>
+        </AppDropdown>
       </header>
 
       <p
@@ -121,6 +203,14 @@ const fullDateTime =
 
       <PostActions />
     </div>
+
+    <EditPostModal
+      v-if="isOwnPost"
+      :open="editOpen"
+      :post="post"
+      @close="editOpen = false"
+      @updated="handleUpdated"
+    />
   </article>
 </template>
 

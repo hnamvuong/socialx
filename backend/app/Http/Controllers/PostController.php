@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CreatePostRequest;
+use App\Http\Requests\UpdatePostRequest;
 use App\Models\Post;
 use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
@@ -120,6 +121,7 @@ class PostController extends Controller
                         'id' => $post->id,
                         'content' => $post->content,
                         'created_at' => $post->created_at,
+                        'updated_at' => $post->updated_at,
                         'user' => [
                             'id' => $post->user->id,
                             'username' => $post
@@ -128,10 +130,9 @@ class PostController extends Controller
                             'display_name' => $post
                                 ->user
                                 ->display_name,
-                            'avatar_url' =>
-                                $this->storage->publicUrl(
-                                    $post->user->avatar_path
-                                ),
+                            'avatar_url' => $this->storage->publicUrl(
+                                $post->user->avatar_path
+                            ),
                             'is_verified' => $post
                                 ->user
                                 ->is_verified,
@@ -165,5 +166,70 @@ class PostController extends Controller
             ],
             201
         );
+    }
+
+    public function update(
+        UpdatePostRequest $request,
+        Post $post
+    ): JsonResponse {
+        $validated = $request->validated();
+
+        $post->content = $validated['content'] ?? null;
+
+        $post->save();
+
+        $post->load([
+            'user',
+            'media',
+        ]);
+
+        return response()->json([
+            'data' => [
+                'post' => [
+                    'id' => $post->id,
+                    'content' => $post->content,
+                    'created_at' => $post->created_at,
+                    'updated_at' => $post->updated_at,
+                    'user' => [
+                        'id' => $post->user->id,
+                        'username' => $post->user->username,
+                        'display_name' => $post->user->display_name,
+                        'avatar_url' => $this->storage
+                            ->publicUrl(
+                                $post
+                                    ->user
+                                    ->avatar_path
+                            ),
+                        'is_verified' => $post
+                            ->user
+                            ->is_verified,
+                    ],
+
+                    'media' => $post
+                        ->media
+                        ->map(
+                            function (
+                                $media
+                            ): array {
+                                return [
+                                    'id' => $media->id,
+                                    'type' => $media->type,
+                                    'path' => $media->path,
+                                    'url' => $this
+                                        ->storage
+                                        ->publicUrl(
+                                            $media->path
+                                        ),
+                                    'mime_type' => $media->mime_type,
+                                    'width' => $media->width,
+                                    'height' => $media->height,
+                                    'sort_order' => $media->sort_order,
+                                ];
+                            }
+                        )
+                        ->values(),
+                ],
+            ],
+        ]);
     }
 }

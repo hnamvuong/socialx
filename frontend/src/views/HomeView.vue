@@ -24,6 +24,25 @@ function handlePostCreated(
 ): void {
   createdPosts.value.unshift(post)
 }
+
+function handlePostUpdated(
+  updatedPost: Post,
+): void {
+  const index =
+    createdPosts.value
+      .findIndex(
+        (post) =>
+          post.id ===
+          updatedPost.id,
+      )
+
+  if (index === -1) {
+    return
+  }
+
+  createdPosts.value[index] =
+    updatedPost
+}
 </script>
 
 <template>
@@ -56,6 +75,7 @@ function handlePostCreated(
           v-for="post in createdPosts"
           :key="post.id"
           :post="post"
+          @updated="handlePostUpdated"
         />
       </section>
 
