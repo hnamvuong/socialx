@@ -7,6 +7,8 @@ use App\Http\Requests\UpdatePostRequest;
 use App\Models\Post;
 use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -231,5 +233,36 @@ class PostController extends Controller
                 ],
             ],
         ]);
+    }
+
+    public function destroy(
+        Request $request,
+        Post $post
+    ): Response {
+        $user = $request->user();
+
+        abort_unless(
+            $user &&
+            $user->id === $post->user_id,
+            403
+        );
+
+        $post->load('media');
+
+        $mediaPaths = $post
+            ->media
+            ->pluck('path')
+            ->filter()
+            ->values()
+            ->all();
+
+        $post->delete();
+
+        foreach ($mediaPaths as $path) {
+            $this->storage
+                ->deletePublic($path);
+        }
+
+        return response()->noContent();
     }
 }

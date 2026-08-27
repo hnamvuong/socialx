@@ -25,6 +25,11 @@ import {
 import type {
   Post,
 } from '@/types/post'
+import axios from 'axios'
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import {
+  deletePost,
+} from '@/services/postService'
 
 const props = defineProps<{
   post: Post
@@ -32,6 +37,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   updated: [post: Post]
+  deleted: [postId: number]
 }>()
 
 const authStore = useAuthStore()
@@ -90,6 +96,69 @@ const wasEdited =
       !== props.post.created_at
     )
   })
+
+const deleteConfirmOpen = ref(false)
+
+const deleting = ref(false)
+
+async function handleDelete(): Promise<void> {
+  if (deleting.value) {
+    return
+  }
+
+  deleting.value = true
+
+  try {
+    await deletePost(
+      props.post.id,
+    )
+
+    deleteConfirmOpen.value =
+      false
+
+    emit(
+      'deleted',
+      props.post.id,
+    )
+
+    toastStore.success(
+      'Đã xóa bài viết.',
+    )
+  } catch (error: unknown) {
+    if (
+      axios.isAxiosError(error)
+      && error.response?.status === 403
+    ) {
+      toastStore.error(
+        'Bạn không có quyền xóa bài viết này.',
+      )
+
+      return
+    }
+
+    if (
+      axios.isAxiosError(error)
+      && error.response?.status === 404
+    ) {
+      emit(
+        'deleted',
+        props.post.id,
+      )
+
+      toastStore.error(
+        'Bài viết không còn tồn tại.',
+      )
+
+      return
+    }
+
+    toastStore.error(
+      'Không thể xóa bài viết.',
+    )
+  } finally {
+    deleting.value = false
+  }
+}
 </script>
 
 <template>
@@ -187,6 +256,17 @@ const wasEdited =
           >
             Chỉnh sửa
           </button>
+
+          <button
+            type="button"
+            class="
+              post-card__menu-item
+              post-card__menu-item--danger
+            "
+            @click="deleteConfirmOpen = true"
+          >
+            Xóa
+          </button>
         </AppDropdown>
       </header>
 
@@ -210,6 +290,18 @@ const wasEdited =
       :post="post"
       @close="editOpen = false"
       @updated="handleUpdated"
+    />
+    <ConfirmDialog
+      v-if="isOwnPost"
+      :open="deleteConfirmOpen"
+      title="Xóa bài viết?"
+      message="Bài viết này sẽ bị xóa vĩnh viễn."
+      confirm-text="Xóa"
+      cancel-text="Hủy"
+      danger
+      :loading="deleting"
+      @cancel="deleteConfirmOpen = false"
+      @confirm="handleDelete"
     />
   </article>
 </template>

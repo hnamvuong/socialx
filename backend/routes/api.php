@@ -95,4 +95,9 @@ Route::middleware('auth:sanctum')->group(function () {
         PostController::class,
         'update',
     ]);
+
+    Route::delete('/posts/{post}', [
+        PostController::class,
+        'destroy',
+    ]);
 });

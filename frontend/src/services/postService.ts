@@ -52,3 +52,11 @@ export async function updatePost(
 
   return response.data
 }
+
+export async function deletePost(
+  postId: number,
+): Promise<void> {
+  await api.delete(
+    `/posts/${postId}`,
+  )
+}

@@ -151,6 +151,10 @@
       background:
         var(--color-surface-secondary);
     }
+
+    &--danger {
+      color: var(--color-danger);
+    }
   }
 
   &__edited {

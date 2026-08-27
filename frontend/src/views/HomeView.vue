@@ -43,6 +43,16 @@ function handlePostUpdated(
   createdPosts.value[index] =
     updatedPost
 }
+
+function handlePostDeleted(
+  postId: number,
+): void {
+  createdPosts.value =
+    createdPosts.value.filter(
+      (post) =>
+        post.id !== postId,
+    )
+}
 </script>
 
 <template>
@@ -76,6 +86,7 @@ function handlePostUpdated(
           :key="post.id"
           :post="post"
           @updated="handlePostUpdated"
+          @deleted="handlePostDeleted"
         />
       </section>
 
