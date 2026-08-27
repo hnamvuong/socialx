@@ -103,6 +103,16 @@ function handleProfileUpdated(
   )
 }
 
+function handleProfileMediaUpdated(
+  updatedUser: PublicUserProfile,
+): void {
+  user.value = updatedUser
+
+  toastStore.success(
+    'Đã cập nhật hình ảnh hồ sơ.'
+  )
+}
+
 watch(
   () => route.params.username,
   () => {
@@ -236,6 +246,7 @@ watch(
       @updated="
         handleProfileUpdated
       "
+      @media-updated="handleProfileMediaUpdated"
     />
   </MainLayout>
 </template>

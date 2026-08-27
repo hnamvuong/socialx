@@ -28,3 +28,41 @@ export async function updateProfile(
 
   return response.data
 }
+
+export async function uploadAvatar(
+  file: File,
+): Promise<UpdateProfileResponse> {
+  const formData = new FormData()
+
+  formData.append(
+    'avatar',
+    file,
+  )
+
+  const response =
+    await api.post<UpdateProfileResponse>(
+      '/profile/avatar',
+      formData,
+    )
+
+  return response.data
+}
+
+export async function uploadCover(
+  file: File,
+): Promise<UpdateProfileResponse> {
+  const formData = new FormData()
+
+  formData.append(
+    'cover',
+    file,
+  )
+
+  const response =
+    await api.post<UpdateProfileResponse>(
+      '/profile/cover',
+      formData,
+    )
+
+  return response.data
+}

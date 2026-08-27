@@ -7,6 +7,9 @@
 
     background:
       var(--color-surface-secondary);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
   }
 
   &__content {

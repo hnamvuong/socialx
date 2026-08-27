@@ -12,12 +12,19 @@ defineProps<{
 
 <template>
   <section class="profile-header">
-    <div class="profile-header__cover" />
+    <div class="profile-header__cover"
+      :style="{
+        backgroundImage:
+          user.cover_url
+            ? `url(${user.cover_url})`
+            : undefined,
+      }"
+    />
 
     <div class="profile-header__content">
       <div class="profile-header__avatar-wrapper">
         <AppAvatar
-          :src="user.avatar_path"
+          :src="user.avatar_url"
           :name="user.display_name"
           :size="136"
         />

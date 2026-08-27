@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateProfileRequest;
+use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
 
 class ProfileController extends Controller
 {
+    public function __construct(
+        private readonly StorageService $storage
+    ) {}
+
     public function update(
         UpdateProfileRequest $request
     ): JsonResponse {
@@ -31,7 +36,13 @@ class ProfileController extends Controller
                     'location' => $user->location,
                     'website' => $user->website,
                     'avatar_path' => $user->avatar_path,
+                    'avatar_url' => $this->storage->publicUrl(
+                        $user->avatar_path
+                    ),
                     'cover_path' => $user->cover_path,
+                    'cover_url' => $this->storage->publicUrl(
+                        $user->cover_path
+                    ),
                     'is_private' => $user->is_private,
                     'is_verified' => $user->is_verified,
                     'created_at' => $user->created_at,

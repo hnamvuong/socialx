@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProfileMediaController;
 use App\Http\Controllers\UserProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -67,11 +68,18 @@ Route::get('/users/{username}', [
 ]);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::patch(
-        '/profile',
-        [
-            ProfileController::class,
-            'update',
-        ]
-    );
+    Route::patch('/profile', [
+        ProfileController::class,
+        'update',
+    ]);
+
+    Route::post('/profile/avatar', [
+        ProfileMediaController::class,
+        'updateAvatar',
+    ]);
+
+    Route::post('/profile/cover', [
+        ProfileMediaController::class,
+        'updateCover',
+    ]);
 });

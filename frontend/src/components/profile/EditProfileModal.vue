@@ -6,6 +6,7 @@ import {
 import axios from 'axios'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppModal from '@/components/ui/AppModal.vue'
+import ProfileMediaEditor from '@/components/profile/ProfileMediaEditor.vue'
 import {
   updateProfile,
 } from '@/services/userService'
@@ -22,6 +23,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   updated: [user: PublicUserProfile]
+  mediaUpdated: [user: PublicUserProfile]
 }>()
 
 const form = reactive({
@@ -130,127 +132,139 @@ watch(
     :close-on-backdrop="!state.submitting"
     @close="close"
   >
-    <form
-      id="edit-profile-form"
-      class="edit-profile"
-      @submit.prevent="submit"
-    >
-      <div class="edit-profile__field">
-        <label
-          for="display-name"
-          class="edit-profile__label"
-        >
-          Tên hiển thị
-        </label>
+    <div class="edit-profile-modal">
+      <ProfileMediaEditor
+        :user="user"
+        @updated="
+          $emit(
+            'mediaUpdated',
+            $event
+          )
+        "
+      />
 
-        <input
-          id="display-name"
-          v-model="form.display_name"
-          type="text"
-          maxlength="50"
-          class="edit-profile__input"
-          :class="{
-            'edit-profile__input--error':
-              errors.display_name,
-          }"
-        >
-
-        <div class="edit-profile__counter">
-          {{ form.display_name.length }}/50
-        </div>
-
-        <p
-          v-if="errors.display_name"
-          class="edit-profile__error"
-        >
-          {{ errors.display_name }}
-        </p>
-      </div>
-
-      <div class="edit-profile__field">
-        <label
-          for="profile-bio"
-          class="edit-profile__label"
-        >
-          Tiểu sử
-        </label>
-
-        <textarea
-          id="profile-bio"
-          v-model="form.bio"
-          maxlength="160"
-          rows="4"
-          class="edit-profile__textarea"
-        />
-
-        <div class="edit-profile__counter">
-          {{ form.bio.length }}/160
-        </div>
-
-        <p
-          v-if="errors.bio"
-          class="edit-profile__error"
-        >
-          {{ errors.bio }}
-        </p>
-      </div>
-
-      <div class="edit-profile__field">
-        <label
-          for="profile-location"
-          class="edit-profile__label"
-        >
-          Vị trí
-        </label>
-
-        <input
-          id="profile-location"
-          v-model="form.location"
-          type="text"
-          maxlength="100"
-          class="edit-profile__input"
-        >
-
-        <p
-          v-if="errors.location"
-          class="edit-profile__error"
-        >
-          {{ errors.location }}
-        </p>
-      </div>
-
-      <div class="edit-profile__field">
-        <label
-          for="profile-website"
-          class="edit-profile__label"
-        >
-          Website
-        </label>
-
-        <input
-          id="profile-website"
-          v-model="form.website"
-          type="url"
-          maxlength="255"
-          placeholder="https://example.com"
-          class="edit-profile__input"
-        >
-
-        <p
-          v-if="errors.website"
-          class="edit-profile__error"
-        >
-          {{ errors.website }}
-        </p>
-      </div>
-
-      <p
-        v-if="state.generalError"
-        class="edit-profile__general-error"
+      <form
+        id="edit-profile-form"
+        class="edit-profile"
+        @submit.prevent="submit"
       >
-        {{ state.generalError }}
-      </p>
-    </form>
+        <div class="edit-profile__field">
+          <label
+            for="display-name"
+            class="edit-profile__label"
+          >
+            Tên hiển thị
+          </label>
+
+          <input
+            id="display-name"
+            v-model="form.display_name"
+            type="text"
+            maxlength="50"
+            class="edit-profile__input"
+            :class="{
+              'edit-profile__input--error':
+                errors.display_name,
+            }"
+          >
+
+          <div class="edit-profile__counter">
+            {{ form.display_name.length }}/50
+          </div>
+
+          <p
+            v-if="errors.display_name"
+            class="edit-profile__error"
+          >
+            {{ errors.display_name }}
+          </p>
+        </div>
+
+        <div class="edit-profile__field">
+          <label
+            for="profile-bio"
+            class="edit-profile__label"
+          >
+            Tiểu sử
+          </label>
+
+          <textarea
+            id="profile-bio"
+            v-model="form.bio"
+            maxlength="160"
+            rows="4"
+            class="edit-profile__textarea"
+          />
+
+          <div class="edit-profile__counter">
+            {{ form.bio.length }}/160
+          </div>
+
+          <p
+            v-if="errors.bio"
+            class="edit-profile__error"
+          >
+            {{ errors.bio }}
+          </p>
+        </div>
+
+        <div class="edit-profile__field">
+          <label
+            for="profile-location"
+            class="edit-profile__label"
+          >
+            Vị trí
+          </label>
+
+          <input
+            id="profile-location"
+            v-model="form.location"
+            type="text"
+            maxlength="100"
+            class="edit-profile__input"
+          >
+
+          <p
+            v-if="errors.location"
+            class="edit-profile__error"
+          >
+            {{ errors.location }}
+          </p>
+        </div>
+
+        <div class="edit-profile__field">
+          <label
+            for="profile-website"
+            class="edit-profile__label"
+          >
+            Website
+          </label>
+
+          <input
+            id="profile-website"
+            v-model="form.website"
+            type="url"
+            maxlength="255"
+            placeholder="https://example.com"
+            class="edit-profile__input"
+          >
+
+          <p
+            v-if="errors.website"
+            class="edit-profile__error"
+          >
+            {{ errors.website }}
+          </p>
+        </div>
+
+        <p
+          v-if="state.generalError"
+          class="edit-profile__general-error"
+        >
+          {{ state.generalError }}
+        </p>
+      </form>
+    </div>
 
     <template #footer>
       <AppButton
