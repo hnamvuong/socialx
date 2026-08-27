@@ -1,0 +1,64 @@
+@use '@/assets/styles/mixins' as *;
+
+.post-actions {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  margin-top: 12px;
+
+  &__item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+
+    gap: 6px;
+
+    min-width: 0;
+
+    padding:
+      8px
+      4px;
+
+    border: 0;
+
+    background: transparent;
+
+    color:
+      var(--color-text-secondary);
+
+    font-size: 13px;
+
+    &:disabled {
+      cursor: default;
+
+      opacity: 1;
+    }
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 28px;
+    height: 28px;
+
+    flex: 0 0 auto;
+
+    border-radius: 50%;
+
+    font-size: 18px;
+  }
+
+  @include mobile {
+    &__label {
+      display: none;
+    }
+
+    &__item {
+      justify-content: center;
+    }
+  }
+}

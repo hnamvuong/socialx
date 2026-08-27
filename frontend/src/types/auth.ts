@@ -37,6 +37,10 @@ export interface AuthenticatedUser {
   email_verified_at: string | null
   is_private: boolean
   is_verified: boolean
+  avatar_path: string | null
+  avatar_url: string | null
+  cover_path: string | null
+  cover_url: string | null
   created_at: string
   roles: string[]
 }

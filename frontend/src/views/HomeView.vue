@@ -1,6 +1,29 @@
 <script setup lang="ts">
+import {
+  ref
+} from 'vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import ThemeSwitcher from '@/components/theme/ThemeSwitcher.vue'
+import PostComposer from '@/components/post/PostComposer.vue'
+import PostCard from '@/components/post/PostCard.vue'
+
+import {
+  useAuthStore,
+} from '@/stores/auth'
+
+import type {
+  Post,
+} from '@/types/post'
+
+const authStore = useAuthStore()
+
+const createdPosts = ref<Post[]>([])
+
+function handlePostCreated(
+  post: Post,
+): void {
+  createdPosts.value.unshift(post)
+}
 </script>
 
 <template>
@@ -14,13 +37,40 @@ import ThemeSwitcher from '@/components/theme/ThemeSwitcher.vue'
         <ThemeSwitcher />
       </header>
 
-      <div class="feed-placeholder">
+      <PostComposer
+        v-if="authStore.isAuthenticated"
+        @created="handlePostCreated"
+      />
+      <div
+        v-else
+        class="home-auth-notice"
+      >
+        Đăng nhập để tạo bài viết.
+      </div>
+
+      <section
+        v-if="createdPosts.length > 0"
+        class="home-post-list"
+      >
+        <PostCard
+          v-for="post in createdPosts"
+          :key="post.id"
+          :post="post"
+        />
+      </section>
+
+      <div
+        v-if="
+          createdPosts.length === 0
+        "
+        class="feed-placeholder"
+      >
         <h2 class="feed-placeholder__title">
-          Chào mừng đến với SocialX
+          Feed đang được xây dựng
         </h2>
 
         <p class="feed-placeholder__description">
-          Feed và bài viết sẽ được xây dựng trong các bài tiếp theo.
+          Bài viết vừa tạo sẽ xuất hiện ở đây.
         </p>
       </div>
     </section>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileMediaController;
 use App\Http\Controllers\UserProfileController;
@@ -82,4 +83,11 @@ Route::middleware('auth:sanctum')->group(function () {
         ProfileMediaController::class,
         'updateCover',
     ]);
+
+    Route::post('/posts', [
+        PostController::class,
+        'store',
+    ])->middleware(
+        'permission:post.create'
+    );
 });

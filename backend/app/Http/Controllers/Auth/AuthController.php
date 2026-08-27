@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -141,6 +142,8 @@ class AuthController extends Controller
 
         $user->loadMissing('roles');
 
+        $storage = app(StorageService::class);
+
         return response()->json([
             'data' => [
                 'user' => [
@@ -151,6 +154,14 @@ class AuthController extends Controller
                     'email_verified_at' => $user->email_verified_at,
                     'is_private' => $user->is_private,
                     'is_verified' => $user->is_verified,
+                    'avatar_path' => $user->avatar_path,
+                    'avatar_url' => $storage->publicUrl(
+                        $user->avatar_path
+                    ),
+                    'cover_path' => $user->cover_path,
+                    'cover_url' => $storage->publicUrl(
+                        $user->cover_path
+                    ),
                     'created_at' => $user->created_at,
                     'roles' => $user->roles
                         ->pluck('name')
