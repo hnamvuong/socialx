@@ -7,6 +7,7 @@ use App\Http\Requests\CreateReplyRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Like;
 use App\Models\Post;
+use App\Models\Repost;
 use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -119,7 +120,8 @@ class PostController extends Controller
         ]);
 
         $post->loadCount(
-            'likes'
+            'likes',
+            'reposts'
         );
 
         return response()->json(
@@ -127,6 +129,7 @@ class PostController extends Controller
                 'data' => [
                     'post' => $this->postData(
                         $post,
+                        false,
                         false
                     ),
                 ],
@@ -154,12 +157,23 @@ class PostController extends Controller
             'likes'
         );
 
+        $viewer = $request->user();
+
         $likedByViewer =
             $post
                 ->likes()
                 ->where(
                     'user_id',
-                    $request->user()->id
+                    $viewer->id
+                )
+                ->exists();
+
+        $repostedByViewer =
+            $post
+                ->reposts()
+                ->where(
+                    'user_id',
+                    $viewer->id
                 )
                 ->exists();
 
@@ -167,7 +181,8 @@ class PostController extends Controller
             'data' => [
                 'post' => $this->postData(
                     $post,
-                    $likedByViewer
+                    $likedByViewer,
+                    $repostedByViewer
                 ),
             ],
         ]);
@@ -206,7 +221,8 @@ class PostController extends Controller
 
     private function postData(
         Post $post,
-        bool $likedByViewer = false
+        bool $likedByViewer = false,
+        bool $repostedByViewer = false
     ): array {
         return [
             'id' => $post->id,
@@ -255,6 +271,8 @@ class PostController extends Controller
                 ->all(),
             'likes_count' => $post->likes_count ?? $post->likes()->count(),
             'liked_by_me' => $likedByViewer,
+            'reposts_count' => $post->reposts_count ?? $post->reposts()->count(),
+            'reposted_by_me' => $repostedByViewer,
         ];
     }
 
@@ -267,20 +285,35 @@ class PostController extends Controller
             'media',
         ]);
 
-        $post->loadCount('likes');
+        $post->loadCount([
+            'likes',
+            'reposts',
+        ]);
 
         $viewer = $request->user('sanctum');
 
-        $likedByViewer =
-            $viewer
-                ? $post
+        $likedByViewer = false;
+        $repostedByViewer = false;
+
+        if ($viewer) {
+            $likedByViewer =
+                $post
                     ->likes()
                     ->where(
                         'user_id',
                         $viewer->id
                     )
-                    ->exists()
-                : false;
+                    ->exists();
+
+            $repostedByViewer =
+                $post
+                    ->reposts()
+                    ->where(
+                        'user_id',
+                        $viewer->id
+                    )
+                    ->exists();
+        }
 
         abort_if(
             $post->user->status !== 'active',
@@ -291,7 +324,8 @@ class PostController extends Controller
             'data' => [
                 'post' => $this->postData(
                     $post,
-                    $likedByViewer
+                    $likedByViewer,
+                    $repostedByViewer
                 ),
             ],
         ]);
@@ -409,7 +443,8 @@ class PostController extends Controller
         ]);
 
         $reply->loadCount(
-            'likes'
+            'likes',
+            'reposts'
         );
 
         return response()->json(
@@ -417,6 +452,7 @@ class PostController extends Controller
                 'data' => [
                     'post' => $this->postData(
                         $reply,
+                        false,
                         false
                     ),
                 ],
@@ -439,9 +475,10 @@ class PostController extends Controller
                     'user',
                     'media',
                 ])
-                ->withCount(
-                    'likes'
-                )
+                ->withCount([
+                    'likes',
+                    'reposts',
+                ])
                 ->findOrFail(
                     $rootId
                 );
@@ -457,9 +494,10 @@ class PostController extends Controller
                     'user',
                     'media',
                 ])
-                ->withCount(
-                    'likes'
-                )
+                ->withCount([
+                    'likes',
+                    'reposts',
+                ])
                 ->where(
                     'root_post_id',
                     $root->id
@@ -483,47 +521,72 @@ class PostController extends Controller
 
         $viewer = $request->user('sanctum');
 
-        $likedPostIds = $viewer
-            ? Like::query()
-                ->where(
-                    'user_id',
-                    $viewer->id
+        $postIds =
+            $replies
+                ->pluck('id')
+                ->prepend(
+                    $root->id
                 )
-                ->whereIn(
-                    'post_id',
-                    collect([
-                        $root->id,
-                    ])
-                        ->merge(
-                            $replies->pluck(
-                                'id'
-                            )
-                        )
-                )
-                ->pluck(
-                    'post_id'
-                )
-                ->flip()
-            : collect();
+                ->values();
+
+        $likedPostIds = collect();
+
+        $repostedPostIds = collect();
+
+        if ($viewer) {
+            $likedPostIds =
+                Like::query()
+                    ->where(
+                        'user_id',
+                        $viewer->id
+                    )
+                    ->whereIn(
+                        'post_id',
+                        $postIds
+                    )
+                    ->pluck(
+                        'post_id'
+                    )
+                    ->flip();
+
+            $repostedPostIds =
+                Repost::query()
+                    ->where(
+                        'user_id',
+                        $viewer->id
+                    )
+                    ->whereIn(
+                        'post_id',
+                        $postIds
+                    )
+                    ->pluck(
+                        'post_id'
+                    )
+                    ->flip();
+        }
 
         return response()->json([
             'data' => [
                 'root' => $this->postData(
                     $root,
-                    $likedPostIds
-                        ->has(
-                            $root->id
-                        )
+                    $likedPostIds->has(
+                        $root->id
+                    ),
+                    $repostedPostIds->has(
+                        $root->id
+                    )
                 ),
 
                 'replies' => $replies
                     ->map(
                         fn (Post $reply) => $this->postData(
                             $reply,
-                            $likedPostIds
-                                ->has(
-                                    $reply->id
-                                )
+                            $likedPostIds->has(
+                                $reply->id
+                            ),
+                            $repostedPostIds->has(
+                                $reply->id
+                            )
                         )
                     )
                     ->values()
@@ -602,6 +665,85 @@ class PostController extends Controller
 
                 'likes_count' => $post
                     ->likes()
+                    ->count(),
+            ],
+        ]);
+    }
+
+    public function repost(
+        Request $request,
+        Post $post
+    ): JsonResponse {
+        $user =
+            $request->user();
+
+        abort_if(
+            $post->user->status !== 'active',
+            404
+        );
+
+        $existingRepost =
+            Repost::query()
+                ->where(
+                    'user_id',
+                    $user->id
+                )
+                ->where(
+                    'post_id',
+                    $post->id
+                )
+                ->first();
+
+        if (! $existingRepost) {
+            $repost = new Repost;
+
+            $repost->user_id = $user->id;
+
+            $repost->post_id = $post->id;
+
+            $repost->save();
+        }
+
+        return response()->json([
+            'data' => [
+                'reposted' => true,
+
+                'reposts_count' => $post
+                    ->reposts()
+                    ->count(),
+            ],
+        ]);
+    }
+
+    public function unrepost(
+        Request $request,
+        Post $post
+    ): JsonResponse {
+        $user =
+            $request->user();
+
+        abort_if(
+            $post->user->status !== 'active',
+            404
+        );
+
+        Repost::query()
+            ->where(
+                'user_id',
+                $user->id
+            )
+            ->where(
+                'post_id',
+                $post->id
+            )
+            ->delete();
+
+        return response()->json([
+            'data' => [
+                'reposted' => false,
+
+                'reposts_count' => $post
+                    ->reposts()
                     ->count(),
             ],
         ]);

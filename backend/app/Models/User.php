@@ -125,4 +125,21 @@ class User extends Authenticatable implements MustVerifyEmailContract
             )
             ->withTimestamps();
     }
+
+    public function reposts(): HasMany
+    {
+        return $this->hasMany(
+            Repost::class
+        );
+    }
+
+    public function repostedPosts(): BelongsToMany
+    {
+        return $this
+            ->belongsToMany(
+                Post::class,
+                'reposts'
+            )
+            ->withTimestamps();
+    }
 }

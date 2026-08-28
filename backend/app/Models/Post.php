@@ -72,4 +72,21 @@ class Post extends Model
             )
             ->withTimestamps();
     }
+
+    public function reposts(): HasMany
+    {
+        return $this->hasMany(
+            Repost::class
+        );
+    }
+
+    public function repostedByUsers(): BelongsToMany
+    {
+        return $this
+            ->belongsToMany(
+                User::class,
+                'reposts'
+            )
+            ->withTimestamps();
+    }
 }

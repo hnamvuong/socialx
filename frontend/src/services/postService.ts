@@ -3,6 +3,7 @@ import api from './api'
 import type {
   LikeResponse,
   PostResponse,
+  RepostResponse,
   ThreadResponse,
 } from '@/types/post'
 
@@ -136,6 +137,28 @@ export async function unlikePost(
   const response =
     await api.delete<LikeResponse>(
       `/posts/${postId}/like`
+    )
+
+  return response.data
+}
+
+export async function repostPost(
+  postId: number,
+): Promise<RepostResponse> {
+  const response =
+    await api.post<RepostResponse>(
+      `/posts/${postId}/repost`,
+    )
+
+  return response.data
+}
+
+export async function unrepostPost(
+  postId: number,
+): Promise<RepostResponse> {
+  const response =
+    await api.delete<RepostResponse>(
+      `/posts/${postId}/repost`,
     )
 
   return response.data

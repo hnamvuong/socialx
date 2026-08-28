@@ -28,6 +28,9 @@ export interface Post {
   likes_count: number
   liked_by_me: boolean
 
+  reposts_count: number
+  reposted_by_me: boolean
+
   user: PostAuthor
 
   media: PostMedia[]
@@ -63,4 +66,11 @@ export interface PostLikeState {
   postId: number
   liked: boolean
   likesCount: number
+}
+
+export interface RepostResponse {
+  data: {
+    reposted: boolean
+    reposts_count: number
+  }
 }

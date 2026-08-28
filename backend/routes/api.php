@@ -127,4 +127,14 @@ Route::middleware('auth:sanctum')->group(function () {
         PostController::class,
         'unlike',
     ]);
+
+    Route::post('/posts/{post}/repost', [
+        PostController::class,
+        'repost',
+    ]);
+
+    Route::delete('/posts/{post}/repost', [
+        PostController::class,
+        'unrepost',
+    ]);
 });
