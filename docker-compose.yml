@@ -36,7 +36,6 @@ services:
 
     volumes:
       - ./frontend:/app
-      - frontend-node-modules:/app/node_modules
 
     ports:
       - "15173:5173"
@@ -105,7 +104,6 @@ services:
 volumes:
   mysql-data:
   redis-data:
-  frontend-node-modules:
 
 networks:
   socialx-network:

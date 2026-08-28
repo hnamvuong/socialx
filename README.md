@@ -61,6 +61,10 @@ docker compose ps
 
 Backend chỉ được khởi động sau khi MySQL và Redis healthy.
 
+Backend dùng bind mount cho source code. Khi container khởi động, Composer sẽ tự cài dependencies vào `backend/vendor` trên máy host. Khi thay đổi dependencies, chạy lại `docker compose up -d --build`.
+
+Frontend cũng dùng bind mount cho source code. Khi container khởi động, `npm ci` sẽ tự cài dependencies vào `frontend/node_modules` trên máy host. Lần khởi động đầu tiên có thể mất thêm thời gian để cài dependencies. Có thể theo dõi bằng `docker compose logs -f backend frontend`.
+
 ### 4. Khởi tạo Laravel
 
 Chạy các lệnh sau lần đầu tiên:
@@ -207,11 +211,16 @@ Nếu thiếu header này, Laravel có thể redirect về trang web và Postman
 
 ### Frontend báo không tìm thấy package
 
-Docker tự cài package khi build image. Nếu IDE chạy TypeScript trên máy host, cài thêm dependency tại thư mục frontend:
+Khi container khởi động, `npm ci` sẽ tự cài dependencies vào `frontend/node_modules` trên máy host, vì vậy IDE trên host cũng sử dụng được cùng thư mục dependencies:
 
 ```bash
-cd frontend
-npm install
+docker compose logs -f frontend
+```
+
+Nếu dependencies chưa được cài hoặc bị lỗi, khởi động lại frontend:
+
+```bash
+docker compose up -d --build frontend
 ```
 
 ### Container chưa chạy
