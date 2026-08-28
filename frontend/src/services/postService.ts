@@ -1,6 +1,7 @@
 import api from './api'
 
 import type {
+  LikeResponse,
   PostResponse,
   ThreadResponse,
 } from '@/types/post'
@@ -113,6 +114,28 @@ export async function getThread(
   const response =
     await api.get<ThreadResponse>(
       `/posts/${postId}/thread`,
+    )
+
+  return response.data
+}
+
+export async function likePost(
+  postId: number,
+): Promise<LikeResponse> {
+  const response =
+    await api.post<LikeResponse>(
+      `/posts/${postId}/like`
+    )
+
+  return response.data
+}
+
+export async function unlikePost(
+  postId: number,
+): Promise<LikeResponse> {
+  const response =
+    await api.delete<LikeResponse>(
+      `/posts/${postId}/like`
     )
 
   return response.data

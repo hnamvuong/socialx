@@ -108,4 +108,21 @@ class User extends Authenticatable implements MustVerifyEmailContract
             Post::class
         );
     }
+
+    public function likes(): HasMany
+    {
+        return $this->hasMany(
+            Like::class
+        );
+    }
+
+    public function likedPosts(): BelongsToMany
+    {
+        return $this
+            ->belongsToMany(
+                Post::class,
+                'likes'
+            )
+            ->withTimestamps();
+    }
 }

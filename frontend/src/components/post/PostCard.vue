@@ -24,11 +24,14 @@ import {
 } from '@/utils/date'
 import type {
   Post,
+  PostLikeState,
 } from '@/types/post'
 import axios from 'axios'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import {
   deletePost,
+  likePost,
+  unlikePost,
 } from '@/services/postService'
 
 const props = defineProps<{
@@ -39,6 +42,7 @@ const emit = defineEmits<{
   updated: [post: Post]
   deleted: [postId: number]
   reply: [post: Post]
+  likeChanged: [state: PostLikeState]
 }>()
 
 const authStore = useAuthStore()
@@ -165,6 +169,124 @@ const postPath =
   computed(() => {
     return `/post/${props.post.id}`
   })
+
+const liking = ref(false)
+
+async function handleLike(): Promise<void> {
+  if (liking.value) {
+    return
+  }
+
+  if (!authStore.isAuthenticated) {
+    toastStore.error(
+      'Bạn cần đăng nhập để thích bài viết.',
+    )
+
+    return
+  }
+
+  const previousLiked =
+    props.post.liked_by_me
+
+  const previousCount =
+    props.post.likes_count
+
+  const optimisticLiked =
+    !previousLiked
+
+  const optimisticCount =
+    optimisticLiked
+      ? previousCount + 1
+      : Math.max(
+          0,
+          previousCount - 1,
+        )
+
+  liking.value = true
+
+  emit(
+    'likeChanged',
+    {
+      postId:
+        props.post.id,
+
+      liked:
+        optimisticLiked,
+
+      likesCount:
+        optimisticCount,
+    },
+  )
+
+  try {
+    const response =
+      optimisticLiked
+        ? await likePost(
+            props.post.id,
+          )
+        : await unlikePost(
+            props.post.id,
+          )
+
+    emit(
+      'likeChanged',
+      {
+        postId:
+          props.post.id,
+
+        liked:
+          response.data.liked,
+
+        likesCount:
+          response.data.likes_count,
+      },
+    )
+  } catch (error: unknown) {
+    emit(
+      'likeChanged',
+      {
+        postId:
+          props.post.id,
+
+        liked:
+          previousLiked,
+
+        likesCount:
+          previousCount,
+      },
+    )
+
+    if (
+      axios.isAxiosError(error)
+      && error.response?.status === 401
+    ) {
+      toastStore.error(
+        'Phiên đăng nhập không còn hợp lệ.',
+      )
+
+      return
+    }
+
+    if (
+      axios.isAxiosError(error)
+      && error.response?.status === 404
+    ) {
+      toastStore.error(
+        'Bài viết không còn tồn tại.',
+      )
+
+      return
+    }
+
+    toastStore.error(
+      optimisticLiked
+        ? 'Không thể thích bài viết.'
+        : 'Không thể bỏ thích bài viết.',
+    )
+  } finally {
+    liking.value = false
+  }
+}
 </script>
 
 <template>
@@ -294,12 +416,15 @@ const postPath =
       </RouterLink>
 
       <PostActions
+        :liked="post.liked_by_me"
+        :likes-count="post.likes_count"
         @reply="
           $emit(
             'reply',
             post
           )
         "
+        @like="handleLike"
       />
     </div>
 

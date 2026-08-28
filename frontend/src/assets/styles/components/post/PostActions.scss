@@ -35,6 +35,19 @@
 
       opacity: 1;
     }
+
+    &--liked {
+      color:
+        var(--color-danger);
+    }
+
+    &:not(:disabled) {
+      cursor: pointer;
+    }
+
+    &__count {
+      font-size: 13px;
+    }
   }
 
   &__icon {

@@ -25,9 +25,13 @@ export interface Post {
   created_at: string
   updated_at: string
 
+  likes_count: number
+  liked_by_me: boolean
+
   user: PostAuthor
 
   media: PostMedia[]
+
 }
 
 export interface PostResponse {
@@ -46,4 +50,17 @@ export interface ThreadResponse {
 export interface ThreadNode {
   post: Post
   children: ThreadNode[]
+}
+
+export interface LikeResponse {
+  data: {
+    liked: boolean
+    likes_count: number
+  }
+}
+
+export interface PostLikeState {
+  postId: number
+  liked: boolean
+  likesCount: number
 }

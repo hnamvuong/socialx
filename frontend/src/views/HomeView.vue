@@ -13,6 +13,7 @@ import {
 
 import type {
   Post,
+  PostLikeState,
 } from '@/types/post'
 
 const authStore = useAuthStore()
@@ -53,6 +54,25 @@ function handlePostDeleted(
         post.id !== postId,
     )
 }
+
+function handlePostLikeChanged(
+  state: PostLikeState,
+): void {
+  const post =
+    createdPosts.value.find(
+      (item) =>
+        item.id ===
+        state.postId,
+    )
+
+  if (!post) {
+    return
+  }
+
+  post.liked_by_me = state.liked
+
+  post.likes_count = state.likesCount
+}
 </script>
 
 <template>
@@ -87,6 +107,7 @@ function handlePostDeleted(
           :post="post"
           @updated="handlePostUpdated"
           @deleted="handlePostDeleted"
+          @like-changed="handlePostLikeChanged"
         />
       </section>
 

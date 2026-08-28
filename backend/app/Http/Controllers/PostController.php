@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\CreateReplyRequest;
 use App\Http\Requests\UpdatePostRequest;
+use App\Models\Like;
 use App\Models\Post;
 use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
@@ -117,11 +118,16 @@ class PostController extends Controller
             'media',
         ]);
 
+        $post->loadCount(
+            'likes'
+        );
+
         return response()->json(
             [
                 'data' => [
                     'post' => $this->postData(
-                        $post
+                        $post,
+                        false
                     ),
                 ],
             ],
@@ -144,10 +150,24 @@ class PostController extends Controller
             'media',
         ]);
 
+        $post->loadCount(
+            'likes'
+        );
+
+        $likedByViewer =
+            $post
+                ->likes()
+                ->where(
+                    'user_id',
+                    $request->user()->id
+                )
+                ->exists();
+
         return response()->json([
             'data' => [
                 'post' => $this->postData(
-                    $post
+                    $post,
+                    $likedByViewer
                 ),
             ],
         ]);
@@ -185,7 +205,8 @@ class PostController extends Controller
     }
 
     private function postData(
-        Post $post
+        Post $post,
+        bool $likedByViewer = false
     ): array {
         return [
             'id' => $post->id,
@@ -232,16 +253,34 @@ class PostController extends Controller
                 )
                 ->values()
                 ->all(),
+            'likes_count' => $post->likes_count ?? $post->likes()->count(),
+            'liked_by_me' => $likedByViewer,
         ];
     }
 
     public function show(
+        Request $request,
         Post $post
     ): JsonResponse {
         $post->load([
             'user',
             'media',
         ]);
+
+        $post->loadCount('likes');
+
+        $viewer = $request->user('sanctum');
+
+        $likedByViewer =
+            $viewer
+                ? $post
+                    ->likes()
+                    ->where(
+                        'user_id',
+                        $viewer->id
+                    )
+                    ->exists()
+                : false;
 
         abort_if(
             $post->user->status !== 'active',
@@ -251,7 +290,8 @@ class PostController extends Controller
         return response()->json([
             'data' => [
                 'post' => $this->postData(
-                    $post
+                    $post,
+                    $likedByViewer
                 ),
             ],
         ]);
@@ -368,11 +408,16 @@ class PostController extends Controller
             'media',
         ]);
 
+        $reply->loadCount(
+            'likes'
+        );
+
         return response()->json(
             [
                 'data' => [
                     'post' => $this->postData(
-                        $reply
+                        $reply,
+                        false
                     ),
                 ],
             ],
@@ -381,6 +426,7 @@ class PostController extends Controller
     }
 
     public function thread(
+        Request $request,
         Post $post
     ): JsonResponse {
         $rootId =
@@ -393,6 +439,9 @@ class PostController extends Controller
                     'user',
                     'media',
                 ])
+                ->withCount(
+                    'likes'
+                )
                 ->findOrFail(
                     $rootId
                 );
@@ -408,6 +457,9 @@ class PostController extends Controller
                     'user',
                     'media',
                 ])
+                ->withCount(
+                    'likes'
+                )
                 ->where(
                     'root_post_id',
                     $root->id
@@ -429,20 +481,128 @@ class PostController extends Controller
                 )
                 ->get();
 
+        $viewer = $request->user('sanctum');
+
+        $likedPostIds = $viewer
+            ? Like::query()
+                ->where(
+                    'user_id',
+                    $viewer->id
+                )
+                ->whereIn(
+                    'post_id',
+                    collect([
+                        $root->id,
+                    ])
+                        ->merge(
+                            $replies->pluck(
+                                'id'
+                            )
+                        )
+                )
+                ->pluck(
+                    'post_id'
+                )
+                ->flip()
+            : collect();
+
         return response()->json([
             'data' => [
                 'root' => $this->postData(
-                    $root
+                    $root,
+                    $likedPostIds
+                        ->has(
+                            $root->id
+                        )
                 ),
 
                 'replies' => $replies
                     ->map(
                         fn (Post $reply) => $this->postData(
-                            $reply
+                            $reply,
+                            $likedPostIds
+                                ->has(
+                                    $reply->id
+                                )
                         )
                     )
                     ->values()
                     ->all(),
+            ],
+        ]);
+    }
+
+    public function like(
+        Request $request,
+        Post $post
+    ): JsonResponse {
+        $user = $request->user();
+
+        abort_if(
+            $post->user->status !== 'active',
+            404
+        );
+
+        $existingLike =
+            Like::query()
+                ->where(
+                    'user_id',
+                    $user->id
+                )
+                ->where(
+                    'post_id',
+                    $post->id
+                )
+                ->first();
+
+        if (! $existingLike) {
+            $like = new Like;
+
+            $like->user_id = $user->id;
+            $like->post_id = $post->id;
+
+            $like->save();
+        }
+
+        return response()->json([
+            'data' => [
+                'liked' => true,
+                'likes_count' => $post
+                    ->likes()
+                    ->count(),
+            ],
+        ]);
+    }
+
+    public function unlike(
+        Request $request,
+        Post $post
+    ): JsonResponse {
+        $user = $request->user();
+
+        abort_if(
+            $post->user->status !== 'active',
+            404
+        );
+
+        Like::query()
+            ->where(
+                'user_id',
+                $user->id
+            )
+            ->where(
+                'post_id',
+                $post->id
+            )
+            ->delete();
+
+        return response()->json([
+            'data' => [
+                'liked' => false,
+
+                'likes_count' => $post
+                    ->likes()
+                    ->count(),
             ],
         ]);
     }

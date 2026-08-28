@@ -117,4 +117,14 @@ Route::middleware('auth:sanctum')->group(function () {
     ])->middleware(
         'permission:post.create'
     );
+
+    Route::post('/posts/{post}/like', [
+        PostController::class,
+        'like',
+    ]);
+
+    Route::delete('/posts/{post}/like', [
+        PostController::class,
+        'unlike',
+    ]);
 });

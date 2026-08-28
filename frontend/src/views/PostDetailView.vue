@@ -23,6 +23,7 @@ import {
 
 import type {
   Post,
+  PostLikeState,
 } from '@/types/post'
 
 const route = useRoute()
@@ -184,6 +185,52 @@ watch(
     immediate: true,
   },
 )
+
+function handlePostLikeChanged(
+  state: PostLikeState,
+): void {
+  if (
+    rootPost.value?.id ===
+    state.postId
+  ) {
+    rootPost.value = {
+      ...rootPost.value,
+
+      liked_by_me:
+        state.liked,
+
+      likes_count:
+        state.likesCount,
+    }
+
+    return
+  }
+
+  const index =
+    replies.value.findIndex(
+      (reply) =>
+        reply.id ===
+        state.postId,
+    )
+
+  if (index === -1) {
+    return
+  }
+
+  const reply = replies.value[index]
+
+  if (!reply) {
+    return
+  }
+
+  replies.value[index] = {
+    ...reply,
+
+    liked_by_me: state.liked,
+
+    likes_count: state.likesCount,
+  }
+}
 </script>
 
 <template>
@@ -242,6 +289,7 @@ watch(
           @updated="handlePostUpdated"
           @deleted="handlePostDeleted"
           @reply="handleReplyRequested"
+          @like-changed="handlePostLikeChanged"
         />
 
         <ReplyComposer
@@ -266,6 +314,9 @@ watch(
           @updated="handlePostUpdated"
           @deleted="handlePostDeleted"
           @reply="handleReplyRequested"
+          @like-changed="
+            handlePostLikeChanged
+          "
         />
       </template>
 

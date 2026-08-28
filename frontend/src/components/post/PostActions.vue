@@ -1,6 +1,13 @@
 <script setup lang="ts">
+defineProps<{
+  liked: boolean
+  likesCount: number
+  likeDisabled?: boolean
+}>()
+
 defineEmits<{
   reply: []
+  like: []
 }>()
 </script>
 
@@ -48,17 +55,34 @@ defineEmits<{
     <button
       type="button"
       class="post-actions__item"
-      disabled
-      title="Thích"
+      :class="{
+        'post-actions__item--liked':
+          liked,
+      }"
+      :disabled="likeDisabled"
+      :aria-pressed="liked"
+      :aria-label="
+        liked
+          ? 'Bỏ thích bài viết'
+          : 'Thích bài viết'
+      "
+      @click="$emit('like')"
     >
-      <span
-        class="post-actions__icon"
-        aria-hidden="true"
-      >
-        ♡
+      <span class="post-actions__icon">
+        {{ liked ? '♥' : '♡' }}
       </span>
 
-      <span class="post-actions__label">
+      <span
+        v-if="likesCount > 0"
+        class="post-actions__count"
+      >
+        {{ likesCount }}
+      </span>
+
+      <span
+        v-else
+        class="post-actions__label"
+      >
         Thích
       </span>
     </button>
