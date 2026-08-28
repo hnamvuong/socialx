@@ -28,4 +28,30 @@ class Post extends Model
             ->hasMany(PostMedia::class)
             ->orderBy('sort_order');
     }
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(
+            Post::class,
+            'parent_post_id'
+        );
+    }
+
+    public function root(): BelongsTo
+    {
+        return $this->belongsTo(
+            Post::class,
+            'root_post_id'
+        );
+    }
+
+    public function replies(): HasMany
+    {
+        return $this
+            ->hasMany(
+                Post::class,
+                'parent_post_id'
+            )
+            ->orderBy('created_at');
+    }
 }

@@ -163,6 +163,26 @@
     font-size: 12px;
   }
 
+  &__detail-link {
+    display: block;
+
+    color: inherit;
+
+    text-decoration: none;
+  }
+
+  &__time-link {
+    flex: 0 0 auto;
+
+    color: inherit;
+
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
   @include mobile {
     gap: 10px;
 

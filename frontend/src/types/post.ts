@@ -19,6 +19,8 @@ export interface PostMedia {
 
 export interface Post {
   id: number
+  parent_post_id: number | null
+  root_post_id: number | null
   content: string | null
   created_at: string
   updated_at: string

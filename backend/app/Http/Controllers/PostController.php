@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CreatePostRequest;
+use App\Http\Requests\CreateReplyRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Post;
 use App\Services\StorageService;
@@ -188,6 +189,8 @@ class PostController extends Controller
     ): array {
         return [
             'id' => $post->id,
+            'parent_post_id' => $post->parent_post_id,
+            'root_post_id' => $post->root_post_id,
             'content' => $post->content,
             'created_at' => $post->created_at,
             'updated_at' => $post->updated_at,
@@ -252,5 +255,128 @@ class PostController extends Controller
                 ),
             ],
         ]);
+    }
+
+    public function reply(
+        CreateReplyRequest $request,
+        Post $post
+    ): JsonResponse {
+        $user = $request->user();
+
+        abort_if(
+            $post->user->status !== 'active',
+            404
+        );
+
+        $validated = $request->validated();
+
+        $storedPaths = [];
+
+        try {
+            $reply = DB::transaction(
+                function () use (
+                    $request,
+                    $user,
+                    $post,
+                    $validated,
+                    &$storedPaths
+                ): Post {
+                    $reply =
+                        $user
+                            ->posts()
+                            ->create([
+                                'content' => $validated[
+                                        'content'
+                                    ] ?? null,
+                            ]);
+
+                    $reply->parent_post_id = $post->id;
+
+                    $reply->root_post_id = $post->root_post_id ?? $post->id;
+
+                    $reply->save();
+
+                    $files = $request->file(
+                        'media',
+                        []
+                    );
+
+                    foreach (
+                        $files as $index => $file
+                    ) {
+                        $path =
+                            $this->storage
+                                ->storePublicImage(
+                                    $file,
+                                    "posts/{$reply->id}"
+                                );
+
+                        $storedPaths[] =
+                            $path;
+
+                        $dimensions =
+                            getimagesize(
+                                $file->getRealPath()
+                            );
+
+                        $width =
+                            is_array($dimensions)
+                                ? $dimensions[0]
+                                : null;
+
+                        $height =
+                            is_array($dimensions)
+                                ? $dimensions[1]
+                                : null;
+
+                        $reply
+                            ->media()
+                            ->create([
+                                'type' => 'image',
+
+                                'path' => $path,
+
+                                'mime_type' => $file
+                                    ->getMimeType(),
+
+                                'width' => $width,
+
+                                'height' => $height,
+
+                                'sort_order' => $index,
+                            ]);
+                    }
+
+                    return $reply;
+                }
+            );
+        } catch (Throwable $exception) {
+            foreach (
+                $storedPaths as $path
+            ) {
+                $this->storage
+                    ->deletePublic(
+                        $path
+                    );
+            }
+
+            throw $exception;
+        }
+
+        $reply->load([
+            'user',
+            'media',
+        ]);
+
+        return response()->json(
+            [
+                'data' => [
+                    'post' => $this->postData(
+                        $reply
+                    ),
+                ],
+            ],
+            201
+        );
     }
 }

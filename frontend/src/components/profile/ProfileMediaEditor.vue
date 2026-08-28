@@ -14,7 +14,7 @@ import type {
   PublicUserProfile,
 } from '@/types/user'
 
-const props = defineProps<{
+defineProps<{
   user: PublicUserProfile
 }>()
 

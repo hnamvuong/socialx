@@ -60,3 +60,48 @@ export async function deletePost(
     `/posts/${postId}`,
   )
 }
+
+export async function getPost(
+  postId: number,
+): Promise<PostResponse> {
+  const response =
+    await api.get<PostResponse>(
+      `/posts/${postId}`,
+    )
+
+  return response.data
+}
+
+export async function createReply(
+  parentPostId: number,
+  content: string,
+  media: File[],
+): Promise<PostResponse> {
+  const formData =
+    new FormData()
+
+  const normalizedContent =
+    content.trim()
+
+  if (normalizedContent) {
+    formData.append(
+      'content',
+      normalizedContent,
+    )
+  }
+
+  media.forEach((file) => {
+    formData.append(
+      'media[]',
+      file,
+    )
+  })
+
+  const response =
+    await api.post<PostResponse>(
+      `/posts/${parentPostId}/replies`,
+      formData,
+    )
+
+  return response.data
+}

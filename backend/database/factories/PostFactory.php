@@ -19,4 +19,16 @@ class PostFactory extends Factory
             'content' => fake()->sentence(),
         ];
     }
+
+    public function replyTo(
+        Post $parent
+    ): static {
+        return $this->state(
+            fn () => [
+                'parent_post_id' => $parent->id,
+                'root_post_id' => $parent->root_post_id
+                    ?? $parent->id,
+            ]
+        );
+    }
 }

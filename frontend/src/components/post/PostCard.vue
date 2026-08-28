@@ -159,6 +159,11 @@ async function handleDelete(): Promise<void> {
     deleting.value = false
   }
 }
+
+const postPath =
+  computed(() => {
+    return `/post/${props.post.id}`
+  })
 </script>
 
 <template>
@@ -215,17 +220,18 @@ async function handleDelete(): Promise<void> {
             ·
           </span>
 
-          <time
-            :datetime="
-              post.created_at
-            "
-            :title="
-              fullDateTime
-            "
-            class="post-card__time"
+          <RouterLink
+            :to="postPath"
+            class="post-card__time-link"
           >
-            {{ formattedTime }}
-          </time>
+            <time
+              :datetime="post.created_at"
+              :title="fullDateTime"
+              class="post-card__time"
+            >
+              {{ formattedTime }}
+            </time>
+          </RouterLink>
 
           <span
             v-if="wasEdited"
@@ -270,16 +276,21 @@ async function handleDelete(): Promise<void> {
         </AppDropdown>
       </header>
 
-      <p
-        v-if="post.content"
-        class="post-card__content"
+      <RouterLink
+        :to="postPath"
+        class="post-card__detail-link"
       >
-        {{ post.content }}
-      </p>
+        <p
+          v-if="post.content"
+          class="post-card__content"
+        >
+          {{ post.content }}
+        </p>
 
-      <PostMediaGrid
-        :media="post.media"
-      />
+        <PostMediaGrid
+          :media="post.media"
+        />
+      </RouterLink>
 
       <PostActions />
     </div>

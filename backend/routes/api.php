@@ -106,4 +106,10 @@ Route::middleware('auth:sanctum')->group(function () {
         'destroy',
     ]);
 
+    Route::post('/posts/{post}/replies', [
+        PostController::class,
+        'reply',
+    ])->middleware(
+        'permission:post.create'
+    );
 });
