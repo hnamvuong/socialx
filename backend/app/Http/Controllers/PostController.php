@@ -119,51 +119,9 @@ class PostController extends Controller
         return response()->json(
             [
                 'data' => [
-                    'post' => [
-                        'id' => $post->id,
-                        'content' => $post->content,
-                        'created_at' => $post->created_at,
-                        'updated_at' => $post->updated_at,
-                        'user' => [
-                            'id' => $post->user->id,
-                            'username' => $post
-                                ->user
-                                ->username,
-                            'display_name' => $post
-                                ->user
-                                ->display_name,
-                            'avatar_url' => $this->storage->publicUrl(
-                                $post->user->avatar_path
-                            ),
-                            'is_verified' => $post
-                                ->user
-                                ->is_verified,
-                        ],
-                        'media' => $post
-                            ->media
-                            ->map(
-                                function (
-                                    $media
-                                ): array {
-                                    return [
-                                        'id' => $media->id,
-                                        'type' => $media->type,
-                                        'path' => $media->path,
-                                        'url' => $this
-                                            ->storage
-                                            ->publicUrl(
-                                                $media
-                                                    ->path
-                                            ),
-                                        'mime_type' => $media->mime_type,
-                                        'width' => $media->width,
-                                        'height' => $media->height,
-                                        'sort_order' => $media->sort_order,
-                                    ];
-                                }
-                            )
-                            ->values(),
-                    ],
+                    'post' => $this->postData(
+                        $post
+                    ),
                 ],
             ],
             201
@@ -187,50 +145,9 @@ class PostController extends Controller
 
         return response()->json([
             'data' => [
-                'post' => [
-                    'id' => $post->id,
-                    'content' => $post->content,
-                    'created_at' => $post->created_at,
-                    'updated_at' => $post->updated_at,
-                    'user' => [
-                        'id' => $post->user->id,
-                        'username' => $post->user->username,
-                        'display_name' => $post->user->display_name,
-                        'avatar_url' => $this->storage
-                            ->publicUrl(
-                                $post
-                                    ->user
-                                    ->avatar_path
-                            ),
-                        'is_verified' => $post
-                            ->user
-                            ->is_verified,
-                    ],
-
-                    'media' => $post
-                        ->media
-                        ->map(
-                            function (
-                                $media
-                            ): array {
-                                return [
-                                    'id' => $media->id,
-                                    'type' => $media->type,
-                                    'path' => $media->path,
-                                    'url' => $this
-                                        ->storage
-                                        ->publicUrl(
-                                            $media->path
-                                        ),
-                                    'mime_type' => $media->mime_type,
-                                    'width' => $media->width,
-                                    'height' => $media->height,
-                                    'sort_order' => $media->sort_order,
-                                ];
-                            }
-                        )
-                        ->values(),
-                ],
+                'post' => $this->postData(
+                    $post
+                ),
             ],
         ]);
     }
@@ -264,5 +181,76 @@ class PostController extends Controller
         }
 
         return response()->noContent();
+    }
+
+    private function postData(
+        Post $post
+    ): array {
+        return [
+            'id' => $post->id,
+            'content' => $post->content,
+            'created_at' => $post->created_at,
+            'updated_at' => $post->updated_at,
+            'user' => [
+                'id' => $post->user->id,
+                'username' => $post->user->username,
+                'display_name' => $post->user->display_name,
+                'avatar_url' => $this->storage
+                    ->publicUrl(
+                        $post
+                            ->user
+                            ->avatar_path
+                    ),
+                'is_verified' => $post
+                    ->user
+                    ->is_verified,
+            ],
+            'media' => $post
+                ->media
+                ->map(
+                    function (
+                        $media
+                    ): array {
+                        return [
+                            'id' => $media->id,
+                            'type' => $media->type,
+                            'path' => $media->path,
+                            'url' => $this
+                                ->storage
+                                ->publicUrl(
+                                    $media->path
+                                ),
+                            'mime_type' => $media->mime_type,
+                            'width' => $media->width,
+                            'height' => $media->height,
+                            'sort_order' => $media->sort_order,
+                        ];
+                    }
+                )
+                ->values()
+                ->all(),
+        ];
+    }
+
+    public function show(
+        Post $post
+    ): JsonResponse {
+        $post->load([
+            'user',
+            'media',
+        ]);
+
+        abort_if(
+            $post->user->status !== 'active',
+            404
+        );
+
+        return response()->json([
+            'data' => [
+                'post' => $this->postData(
+                    $post
+                ),
+            ],
+        ]);
     }
 }

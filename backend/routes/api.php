@@ -68,6 +68,11 @@ Route::get('/users/{username}', [
     'show',
 ]);
 
+Route::get('/posts/{post}', [
+    PostController::class,
+    'show',
+]);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/profile', [
         ProfileController::class,
@@ -100,4 +105,5 @@ Route::middleware('auth:sanctum')->group(function () {
         PostController::class,
         'destroy',
     ]);
+
 });
