@@ -1,3 +1,9 @@
+<script setup lang="ts">
+defineEmits<{
+  reply: []
+}>()
+</script>
+
 <template>
   <div
     class="post-actions"
@@ -6,7 +12,7 @@
     <button
       type="button"
       class="post-actions__item"
-      disabled
+      @click="$emit('reply')"
       title="Trả lời"
     >
       <span

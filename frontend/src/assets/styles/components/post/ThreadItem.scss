@@ -1,0 +1,18 @@
+.thread-item {
+  position: relative;
+
+  &__children {
+    position: relative;
+
+    margin-left: 28px;
+
+    border-left:
+      2px solid var(--color-border);
+  }
+
+  &--nested {
+    .post-card {
+      padding-left: 14px;
+    }
+  }
+}

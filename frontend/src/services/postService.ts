@@ -2,6 +2,7 @@ import api from './api'
 
 import type {
   PostResponse,
+  ThreadResponse,
 } from '@/types/post'
 
 export async function createPost(
@@ -101,6 +102,17 @@ export async function createReply(
     await api.post<PostResponse>(
       `/posts/${parentPostId}/replies`,
       formData,
+    )
+
+  return response.data
+}
+
+export async function getThread(
+  postId: number,
+): Promise<ThreadResponse> {
+  const response =
+    await api.get<ThreadResponse>(
+      `/posts/${postId}/thread`,
     )
 
   return response.data

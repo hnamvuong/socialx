@@ -13,8 +13,14 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppSkeleton from '@/components/ui/AppSkeleton.vue'
 import PostCard from '@/components/post/PostCard.vue'
 import {
-  getPost,
+  getThread,
 } from '@/services/postService'
+import ReplyComposer from '@/components/post/ReplyComposer.vue'
+import ThreadList from '@/components/post/ThreadList.vue'
+import {
+  useAuthStore,
+} from '@/stores/auth'
+
 import type {
   Post,
 } from '@/types/post'
@@ -23,7 +29,11 @@ const route = useRoute()
 
 const router = useRouter()
 
-const post = ref<Post | null>(null)
+const authStore = useAuthStore()
+
+const rootPost = ref<Post | null>(null)
+
+const replies = ref<Post[]>([])
 
 const loading = ref(true)
 
@@ -53,13 +63,16 @@ function getPostId(): number | null {
   return postId
 }
 
-async function loadPost(): Promise<void> {
-  const postId = getPostId()
+async function loadThread(): Promise<void> {
+  const postId =
+    getPostId()
 
   loading.value = true
   notFound.value = false
   errorMessage.value = null
-  post.value = null
+
+  rootPost.value = null
+  replies.value = []
 
   if (!postId) {
     notFound.value = true
@@ -68,9 +81,19 @@ async function loadPost(): Promise<void> {
   }
 
   try {
-    const response = await getPost(postId)
+    const response =
+      await getThread(
+        postId
+      )
 
-    post.value = response.data.post
+    rootPost.value =
+      response.data.root
+
+    replyTarget.value =
+      response.data.root
+
+    replies.value =
+      response.data.replies
   } catch (error: unknown) {
     if (
       axios.isAxiosError(error)
@@ -81,7 +104,7 @@ async function loadPost(): Promise<void> {
     }
 
     errorMessage.value =
-      'Không thể tải bài viết.'
+      'Không thể tải cuộc hội thoại.'
   } finally {
     loading.value = false
   }
@@ -90,21 +113,72 @@ async function loadPost(): Promise<void> {
 function handlePostUpdated(
   updatedPost: Post,
 ): void {
-  post.value = updatedPost
+  if (
+    rootPost.value?.id
+      === updatedPost.id
+  ) {
+    rootPost.value =
+      updatedPost
+
+    return
+  }
+
+  const index =
+    replies.value.findIndex(
+      (reply) =>
+        reply.id ===
+        updatedPost.id,
+    )
+
+  if (index !== -1) {
+    replies.value[index] =
+      updatedPost
+  }
 }
 
-function handlePostDeleted(): void {
-  void router.replace('/')
+async function handlePostDeleted(
+  postId: number,
+): Promise<void> {
+  if (
+    rootPost.value?.id
+      === postId
+  ) {
+    void router.replace('/')
+    return
+  }
+
+  await loadThread()
 }
 
 function goBack(): void {
   router.back()
 }
 
+function handleReplyCreated(
+  reply: Post,
+): void {
+  replies.value.push(
+    reply,
+  )
+
+  if (rootPost.value) {
+    replyTarget.value = rootPost.value
+  }
+}
+
+const replyTarget = ref<Post | null>(null)
+
+function handleReplyRequested(
+  post: Post,
+): void {
+  replyTarget.value =
+    post
+}
+
 watch(
   () => route.params.id,
   () => {
-    void loadPost()
+    void loadThread()
   },
   {
     immediate: true,
@@ -160,12 +234,40 @@ watch(
         </div>
       </div>
 
-      <PostCard
-        v-else-if="post"
-        :post="post"
-        @updated="handlePostUpdated"
-        @deleted="handlePostDeleted"
-      />
+      <template
+        v-else-if="rootPost"
+      >
+        <PostCard
+          :post="rootPost"
+          @updated="handlePostUpdated"
+          @deleted="handlePostDeleted"
+          @reply="handleReplyRequested"
+        />
+
+        <ReplyComposer
+          v-if="
+            authStore.isAuthenticated
+            && replyTarget
+          "
+          :parent-post="replyTarget"
+          @created="handleReplyCreated"
+        />
+
+        <div
+          v-else
+          class="post-detail-view__reply-notice"
+        >
+          Đăng nhập để tham gia cuộc hội thoại.
+        </div>
+
+        <ThreadList
+          :root="rootPost"
+          :replies="replies"
+          @updated="handlePostUpdated"
+          @deleted="handlePostDeleted"
+          @reply="handleReplyRequested"
+        />
+      </template>
 
       <div
         v-else-if="notFound"

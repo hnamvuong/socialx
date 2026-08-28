@@ -38,6 +38,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   updated: [post: Post]
   deleted: [postId: number]
+  reply: [post: Post]
 }>()
 
 const authStore = useAuthStore()
@@ -292,7 +293,14 @@ const postPath =
         />
       </RouterLink>
 
-      <PostActions />
+      <PostActions
+        @reply="
+          $emit(
+            'reply',
+            post
+          )
+        "
+      />
     </div>
 
     <EditPostModal

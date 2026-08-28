@@ -73,6 +73,11 @@ Route::get('/posts/{post}', [
     'show',
 ]);
 
+Route::get('/posts/{post}/thread', [
+    PostController::class,
+    'thread',
+]);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/profile', [
         ProfileController::class,

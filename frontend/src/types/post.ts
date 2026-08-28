@@ -35,3 +35,15 @@ export interface PostResponse {
     post: Post
   }
 }
+
+export interface ThreadResponse {
+  data: {
+    root: Post
+    replies: Post[]
+  }
+}
+
+export interface ThreadNode {
+  post: Post
+  children: ThreadNode[]
+}

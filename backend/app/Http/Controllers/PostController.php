@@ -379,4 +379,71 @@ class PostController extends Controller
             201
         );
     }
+
+    public function thread(
+        Post $post
+    ): JsonResponse {
+        $rootId =
+            $post->root_post_id
+            ?? $post->id;
+
+        $root =
+            Post::query()
+                ->with([
+                    'user',
+                    'media',
+                ])
+                ->findOrFail(
+                    $rootId
+                );
+
+        abort_if(
+            $root->user->status !== 'active',
+            404
+        );
+
+        $replies =
+            Post::query()
+                ->with([
+                    'user',
+                    'media',
+                ])
+                ->where(
+                    'root_post_id',
+                    $root->id
+                )
+                ->whereHas(
+                    'user',
+                    function ($query): void {
+                        $query->where(
+                            'status',
+                            'active'
+                        );
+                    }
+                )
+                ->orderBy(
+                    'created_at'
+                )
+                ->orderBy(
+                    'id'
+                )
+                ->get();
+
+        return response()->json([
+            'data' => [
+                'root' => $this->postData(
+                    $root
+                ),
+
+                'replies' => $replies
+                    ->map(
+                        fn (Post $reply) => $this->postData(
+                            $reply
+                        )
+                    )
+                    ->values()
+                    ->all(),
+            ],
+        ]);
+    }
 }
