@@ -33,6 +33,12 @@ class CreatePostRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'quoted_post_id' => [
+                'nullable',
+                'integer',
+                'exists:posts,id',
+            ],
+
             'content' => [
                 'nullable',
                 'string',

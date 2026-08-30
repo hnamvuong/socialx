@@ -1,6 +1,7 @@
 import api from './api'
 
 import type {
+  CreatePostOptions,
   LikeResponse,
   PostResponse,
   RepostResponse,
@@ -10,6 +11,7 @@ import type {
 export async function createPost(
   content: string,
   media: File[],
+  options: CreatePostOptions = {},
 ): Promise<PostResponse> {
   const formData =
     new FormData()
@@ -21,6 +23,20 @@ export async function createPost(
     formData.append(
       'content',
       normalizedContent,
+    )
+  }
+
+  if (
+    options.quotedPostId
+    !== undefined
+    && options.quotedPostId
+    !== null
+  ) {
+    formData.append(
+      'quoted_post_id',
+      String(
+        options.quotedPostId,
+      ),
     )
   }
 

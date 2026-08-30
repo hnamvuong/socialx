@@ -21,6 +21,7 @@ export interface Post {
   id: number
   parent_post_id: number | null
   root_post_id: number | null
+  quoted_post_id: number | null
   content: string | null
   created_at: string
   updated_at: string
@@ -35,6 +36,7 @@ export interface Post {
 
   media: PostMedia[]
 
+  quoted_post: QuotedPost | null
 }
 
 export interface PostResponse {
@@ -73,4 +75,17 @@ export interface RepostResponse {
     reposted: boolean
     reposts_count: number
   }
+}
+
+export interface QuotedPost {
+  id: number
+  content: string | null
+  created_at: string
+
+  user: PostAuthor
+  media: PostMedia[]
+}
+
+export interface CreatePostOptions {
+  quotedPostId?: number | null
 }

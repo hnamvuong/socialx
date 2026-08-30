@@ -89,4 +89,20 @@ class Post extends Model
             )
             ->withTimestamps();
     }
+
+    public function quotedPost(): BelongsTo
+    {
+        return $this->belongsTo(
+            Post::class,
+            'quoted_post_id'
+        );
+    }
+
+    public function quotedByPosts(): HasMany
+    {
+        return $this->hasMany(
+            Post::class,
+            'quoted_post_id'
+        );
+    }
 }
