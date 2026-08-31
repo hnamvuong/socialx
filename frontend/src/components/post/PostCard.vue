@@ -467,11 +467,9 @@ async function handleBookmark(): Promise<void> {
   emit(
     'bookmarkChanged',
     {
-      postId:
-        props.post.id,
-
-      bookmarked:
-        optimisticBookmarked,
+      postId: props.post.id,
+      bookmarked: optimisticBookmarked,
+      phase: 'optimistic',
     },
   )
 
@@ -488,22 +486,18 @@ async function handleBookmark(): Promise<void> {
     emit(
       'bookmarkChanged',
       {
-        postId:
-          props.post.id,
-
-        bookmarked:
-          response.data.bookmarked,
+        postId: props.post.id,
+        bookmarked: response.data.bookmarked,
+        phase: 'confirmed',
       },
     )
   } catch (error: unknown) {
     emit(
       'bookmarkChanged',
       {
-        postId:
-          props.post.id,
-
-        bookmarked:
-          previousBookmarked,
+        postId: props.post.id,
+        bookmarked: previousBookmarked,
+        phase: 'rollback',
       },
     )
 

@@ -101,10 +101,26 @@ export interface PostRepostState {
 export interface PostBookmarkState {
   postId: number
   bookmarked: boolean
+  phase: 'optimistic' | 'confirmed' | 'rollback'
 }
 
 export interface BookmarkResponse {
   data: {
     bookmarked: boolean
+  }
+}
+
+export interface PaginationMeta {
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+  has_more: boolean
+}
+
+export interface BookmarkListResponse {
+  data: {
+    posts: Post[]
+    pagination: PaginationMeta
   }
 }

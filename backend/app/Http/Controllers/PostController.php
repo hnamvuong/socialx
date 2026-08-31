@@ -9,6 +9,7 @@ use App\Models\Bookmark;
 use App\Models\Like;
 use App\Models\Post;
 use App\Models\Repost;
+use App\Services\PostResponseService;
 use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,8 @@ use Throwable;
 class PostController extends Controller
 {
     public function __construct(
-        private readonly StorageService $storage
+        private readonly StorageService $storage,
+        private readonly PostResponseService $postResponse
     ) {}
 
     public function store(
@@ -165,7 +167,7 @@ class PostController extends Controller
         return response()->json(
             [
                 'data' => [
-                    'post' => $this->postData(
+                    'post' => $this->postResponse->toArray(
                         $post,
                         false,
                         false,
@@ -230,7 +232,7 @@ class PostController extends Controller
 
         return response()->json([
             'data' => [
-                'post' => $this->postData(
+                'post' => $this->postResponse->toArray(
                     $post,
                     $likedByViewer,
                     $repostedByViewer,
@@ -269,69 +271,6 @@ class PostController extends Controller
         }
 
         return response()->noContent();
-    }
-
-    private function postData(
-        Post $post,
-        bool $likedByViewer = false,
-        bool $repostedByViewer = false,
-        bool $bookmarkedByViewer = false
-    ): array {
-        return [
-            'id' => $post->id,
-            'parent_post_id' => $post->parent_post_id,
-            'root_post_id' => $post->root_post_id,
-            'quoted_post_id' => $post->quoted_post_id,
-            'content' => $post->content,
-            'created_at' => $post->created_at,
-            'updated_at' => $post->updated_at,
-            'user' => [
-                'id' => $post->user->id,
-                'username' => $post->user->username,
-                'display_name' => $post->user->display_name,
-                'avatar_url' => $this->storage
-                    ->publicUrl(
-                        $post
-                            ->user
-                            ->avatar_path
-                    ),
-                'is_verified' => $post
-                    ->user
-                    ->is_verified,
-            ],
-            'media' => $post
-                ->media
-                ->map(
-                    function (
-                        $media
-                    ): array {
-                        return [
-                            'id' => $media->id,
-                            'type' => $media->type,
-                            'path' => $media->path,
-                            'url' => $this
-                                ->storage
-                                ->publicUrl(
-                                    $media->path
-                                ),
-                            'mime_type' => $media->mime_type,
-                            'width' => $media->width,
-                            'height' => $media->height,
-                            'sort_order' => $media->sort_order,
-                        ];
-                    }
-                )
-                ->values()
-                ->all(),
-            'likes_count' => $post->likes_count ?? $post->likes()->count(),
-            'liked_by_me' => $likedByViewer,
-            'reposts_count' => $post->reposts_count ?? $post->reposts()->count(),
-            'reposted_by_me' => $repostedByViewer,
-            'quoted_post' => $this->quotedPostData(
-                $post->quotedPost
-            ),
-            'bookmarked_by_me' => $bookmarkedByViewer,
-        ];
     }
 
     public function show(
@@ -393,7 +332,7 @@ class PostController extends Controller
 
         return response()->json([
             'data' => [
-                'post' => $this->postData(
+                'post' => $this->postResponse->toArray(
                     $post,
                     $likedByViewer,
                     $repostedByViewer,
@@ -522,7 +461,7 @@ class PostController extends Controller
         return response()->json(
             [
                 'data' => [
-                    'post' => $this->postData(
+                    'post' => $this->postResponse->toArray(
                         $reply,
                         false,
                         false,
@@ -663,7 +602,7 @@ class PostController extends Controller
 
         return response()->json([
             'data' => [
-                'root' => $this->postData(
+                'root' => $this->postResponse->toArray(
                     $root,
                     $likedPostIds->has(
                         $root->id
@@ -678,7 +617,7 @@ class PostController extends Controller
 
                 'replies' => $replies
                     ->map(
-                        fn (Post $reply) => $this->postData(
+                        fn (Post $reply) => $this->postResponse->toArray(
                             $reply,
                             $likedPostIds->has(
                                 $reply->id
@@ -849,73 +788,6 @@ class PostController extends Controller
                     ->count(),
             ],
         ]);
-    }
-
-    private function quotedPostData(
-        ?Post $post
-    ): ?array {
-        if (! $post) {
-            return null;
-        }
-
-        if (
-            ! $post->relationLoaded(
-                'user'
-            )
-            || $post->user->status !== 'active'
-        ) {
-            return null;
-        }
-
-        return [
-            'id' => $post->id,
-
-            'content' => $post->content,
-
-            'created_at' => $post->created_at,
-
-            'user' => [
-                'id' => $post->user->id,
-
-                'username' => $post->user->username,
-
-                'display_name' => $post->user->display_name
-                    ?? $post->user->name,
-
-                'avatar_url' => $post->user->avatar_path
-                        ? $this->storage
-                            ->publicUrl(
-                                $post->user->avatar_path
-                            )
-                        : null,
-
-                'is_verified' => (bool)
-                    $post->user->is_verified,
-            ],
-
-            'media' => $post
-                ->media
-                ->map(
-                    fn ($media) => [
-                        'id' => $media->id,
-
-                        'type' => $media->type,
-
-                        'url' => $this->storage
-                            ->publicUrl(
-                                $media->path
-                            ),
-
-                        'width' => $media->width,
-
-                        'height' => $media->height,
-
-                        'sort_order' => $media->sort_order,
-                    ]
-                )
-                ->values()
-                ->all(),
-        ];
     }
 
     public function bookmark(

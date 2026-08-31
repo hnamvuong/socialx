@@ -75,15 +75,18 @@ const profilePath = computed(() => {
           </span>
         </span>
 
-        <span class="main-navigation__item main-navigation__item--disabled">
+        <RouterLink
+          to="/bookmarks"
+          class="main-navigation__item"
+        >
           <span class="main-navigation__icon">
-            B
+            ◇
           </span>
 
           <span class="main-navigation__label">
             Dấu trang
           </span>
-        </span>
+        </RouterLink>
 
         <RouterLink
           v-if="profilePath"

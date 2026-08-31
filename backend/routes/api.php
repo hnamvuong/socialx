@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileMediaController;
@@ -141,12 +142,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts/{post}/bookmark', [
         PostController::class,
         'bookmark',
-    ]
-    );
+    ]);
 
     Route::delete('/posts/{post}/bookmark', [
         PostController::class,
         'unbookmark',
-    ]
-    );
+    ]);
+
+    Route::get('/bookmarks', [
+        BookmarkController::class,
+        'index',
+    ]);
 });

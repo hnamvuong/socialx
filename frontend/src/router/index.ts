@@ -24,6 +24,18 @@ const router = createRouter({
       name: 'post-detail',
       component: PostDetailView,
     },
+
+    {
+      path: '/bookmarks',
+      name: 'bookmarks',
+      component: () =>
+        import(
+          '@/views/BookmarkView.vue'
+        ),
+      meta: {
+        requiresAuth: true,
+      },
+    },
   ],
 })
 
