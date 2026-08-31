@@ -12,6 +12,8 @@ import AppDropdown from '@/components/ui/AppDropdown.vue'
 import EditPostModal from '@/components/post/EditPostModal.vue'
 import PostActions from '@/components/post/PostActions.vue'
 import PostMediaGrid from '@/components/post/PostMediaGrid.vue'
+import QuotedPostCard from '@/components/post/QuotedPostCard.vue'
+import QuotePostModal from '@/components/post/QuotePostModal.vue'
 import {
   useAuthStore,
 } from '@/stores/auth'
@@ -25,13 +27,16 @@ import {
 import type {
   Post,
   PostLikeState,
+  PostRepostState,
 } from '@/types/post'
 import axios from 'axios'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import {
   deletePost,
   likePost,
+  repostPost,
   unlikePost,
+  unrepostPost,
 } from '@/services/postService'
 
 const props = defineProps<{
@@ -43,6 +48,8 @@ const emit = defineEmits<{
   deleted: [postId: number]
   reply: [post: Post]
   likeChanged: [state: PostLikeState]
+  repostChanged: [state: PostRepostState]
+  quoteCreated: [post: Post]
 }>()
 
 const authStore = useAuthStore()
@@ -287,6 +294,148 @@ async function handleLike(): Promise<void> {
     liking.value = false
   }
 }
+
+const reposting = ref(false)
+
+const quoteOpen = ref(false)
+
+async function handleRepost(): Promise<void> {
+  if (reposting.value) {
+    return
+  }
+
+  if (!authStore.isAuthenticated) {
+    toastStore.error(
+      'Bạn cần đăng nhập để đăng lại bài viết.',
+    )
+
+    return
+  }
+
+  const previousReposted = props.post.reposted_by_me
+
+  const previousCount = props.post.reposts_count
+
+  const optimisticReposted = !previousReposted
+
+  const optimisticCount =
+    optimisticReposted
+      ? previousCount + 1
+      : Math.max(
+          0,
+          previousCount - 1,
+        )
+
+  reposting.value = true
+
+  emit(
+    'repostChanged',
+    {
+      postId:
+        props.post.id,
+
+      reposted:
+        optimisticReposted,
+
+      repostsCount:
+        optimisticCount,
+    },
+  )
+
+  try {
+    const response =
+      optimisticReposted
+        ? await repostPost(
+            props.post.id,
+          )
+        : await unrepostPost(
+            props.post.id,
+          )
+
+    emit(
+      'repostChanged',
+      {
+        postId:
+          props.post.id,
+
+        reposted:
+          response.data.reposted,
+
+        repostsCount:
+          response.data.reposts_count,
+      },
+    )
+  } catch (error: unknown) {
+    emit(
+      'repostChanged',
+      {
+        postId:
+          props.post.id,
+
+        reposted:
+          previousReposted,
+
+        repostsCount:
+          previousCount,
+      },
+    )
+
+    if (
+      axios.isAxiosError(error)
+      && error.response?.status === 401
+    ) {
+      toastStore.error(
+        'Phiên đăng nhập không còn hợp lệ.',
+      )
+
+      return
+    }
+
+    if (
+      axios.isAxiosError(error)
+      && error.response?.status === 404
+    ) {
+      toastStore.error(
+        'Bài viết không còn tồn tại.',
+      )
+
+      return
+    }
+
+    toastStore.error(
+      optimisticReposted
+        ? 'Không thể đăng lại bài viết.'
+        : 'Không thể hoàn tác đăng lại.',
+    )
+  } finally {
+    reposting.value = false
+  }
+}
+
+function handleQuote(): void {
+  if (!authStore.isAuthenticated) {
+    toastStore.error(
+      'Bạn cần đăng nhập để trích dẫn bài viết.',
+    )
+
+    return
+  }
+
+  quoteOpen.value = true
+}
+
+function closeQuote(): void {
+  quoteOpen.value = false
+}
+
+function handleQuoteCreated(
+  post: Post,
+): void {
+  emit(
+    'quoteCreated',
+    post,
+  )
+}
 </script>
 
 <template>
@@ -413,11 +562,20 @@ async function handleLike(): Promise<void> {
         <PostMediaGrid
           :media="post.media"
         />
+
+        <QuotedPostCard
+          v-if="post.quoted_post"
+          :post="post.quoted_post"
+        />
       </RouterLink>
 
       <PostActions
         :liked="post.liked_by_me"
         :likes-count="post.likes_count"
+        :like-disabled="liking"
+        :reposted="post.reposted_by_me"
+        :reposts-count="post.reposts_count"
+        :repost-disabled="reposting"
         @reply="
           $emit(
             'reply',
@@ -425,6 +583,8 @@ async function handleLike(): Promise<void> {
           )
         "
         @like="handleLike"
+        @repost="handleRepost"
+        @quote="handleQuote"
       />
     </div>
 
@@ -446,6 +606,15 @@ async function handleLike(): Promise<void> {
       :loading="deleting"
       @cancel="deleteConfirmOpen = false"
       @confirm="handleDelete"
+    />
+
+    <QuotePostModal
+      :open="quoteOpen"
+      :quoted-post="post"
+      @close="closeQuote"
+      @created="
+        handleQuoteCreated
+      "
     />
   </article>
 </template>

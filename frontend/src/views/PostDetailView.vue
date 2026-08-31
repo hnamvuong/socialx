@@ -24,6 +24,7 @@ import {
 import type {
   Post,
   PostLikeState,
+  PostRepostState,
 } from '@/types/post'
 
 const route = useRoute()
@@ -231,6 +232,54 @@ function handlePostLikeChanged(
     likes_count: state.likesCount,
   }
 }
+
+function handlePostRepostChanged(
+  state: PostRepostState,
+): void {
+  if (
+    rootPost.value?.id
+      === state.postId
+  ) {
+    rootPost.value = {
+      ...rootPost.value,
+      reposted_by_me: state.reposted,
+      reposts_count: state.repostsCount,
+    }
+
+    return
+  }
+
+  const index =
+    replies.value.findIndex(
+      (reply) =>
+        reply.id ===
+        state.postId,
+    )
+
+  if (index === -1) {
+    return
+  }
+
+  const reply = replies.value[index]
+
+  if (!reply) {
+    return
+  }
+
+  replies.value[index] = {
+    ...reply,
+    reposted_by_me: state.reposted,
+    reposts_count: state.repostsCount,
+  }
+}
+
+async function handleQuoteCreated(
+  post: Post,
+): Promise<void> {
+  await router.push(
+    `/post/${post.id}`
+  )
+}
 </script>
 
 <template>
@@ -290,6 +339,8 @@ function handlePostLikeChanged(
           @deleted="handlePostDeleted"
           @reply="handleReplyRequested"
           @like-changed="handlePostLikeChanged"
+          @repost-changed="handlePostRepostChanged"
+          @quote-created="handleQuoteCreated"
         />
 
         <ReplyComposer
@@ -314,9 +365,9 @@ function handlePostLikeChanged(
           @updated="handlePostUpdated"
           @deleted="handlePostDeleted"
           @reply="handleReplyRequested"
-          @like-changed="
-            handlePostLikeChanged
-          "
+          @like-changed="handlePostLikeChanged"
+          @repost-changed="handlePostRepostChanged"
+          @quote-created="handleQuoteCreated"
         />
       </template>
 

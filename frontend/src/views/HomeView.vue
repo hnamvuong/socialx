@@ -14,6 +14,7 @@ import {
 import type {
   Post,
   PostLikeState,
+  PostRepostState,
 } from '@/types/post'
 
 const authStore = useAuthStore()
@@ -73,6 +74,35 @@ function handlePostLikeChanged(
 
   post.likes_count = state.likesCount
 }
+
+function handlePostRepostChanged(
+  state: PostRepostState,
+): void {
+  const post =
+    createdPosts.value.find(
+      (item) =>
+        item.id ===
+        state.postId,
+    )
+
+  if (!post) {
+    return
+  }
+
+  post.reposted_by_me =
+    state.reposted
+
+  post.reposts_count =
+    state.repostsCount
+}
+
+function handleQuoteCreated(
+  post: Post,
+): void {
+  createdPosts.value.unshift(
+    post,
+  )
+}
 </script>
 
 <template>
@@ -108,6 +138,8 @@ function handlePostLikeChanged(
           @updated="handlePostUpdated"
           @deleted="handlePostDeleted"
           @like-changed="handlePostLikeChanged"
+          @repost-changed="handlePostRepostChanged"
+          @quote-created="handleQuoteCreated"
         />
       </section>
 

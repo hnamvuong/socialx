@@ -3,6 +3,7 @@ import PostCard from '@/components/post/PostCard.vue'
 import type {
   Post,
   PostLikeState,
+  PostRepostState,
   ThreadNode,
 } from '@/types/post'
 
@@ -16,6 +17,8 @@ defineEmits<{
   deleted: [postId: number]
   reply: [post: Post]
   likeChanged: [state: PostLikeState]
+  repostChanged: [state: PostRepostState]
+  quoteCreated: [post: Post]
 }>()
 </script>
 
@@ -50,6 +53,18 @@ defineEmits<{
       @like-changed="
         $emit(
           'likeChanged',
+          $event
+        )
+      "
+      @repost-changed="
+        $emit(
+          'repostChanged',
+          $event
+        )
+      "
+      @quote-created="
+        $emit(
+          'quoteCreated',
           $event
         )
       "

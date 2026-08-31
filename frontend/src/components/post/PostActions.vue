@@ -1,13 +1,21 @@
 <script setup lang="ts">
+import AppDropdown from '@/components/ui/AppDropdown.vue';
+
 defineProps<{
   liked: boolean
   likesCount: number
   likeDisabled?: boolean
+
+  reposted: boolean
+  repostsCount: number
+  repostDisabled?: boolean
 }>()
 
 defineEmits<{
   reply: []
   like: []
+  repost: []
+  quote: []
 }>()
 </script>
 
@@ -34,23 +42,62 @@ defineEmits<{
       </span>
     </button>
 
-    <button
-      type="button"
-      class="post-actions__item"
-      disabled
-      title="Đăng lại"
-    >
-      <span
-        class="post-actions__icon"
-        aria-hidden="true"
-      >
-        ↻
-      </span>
+    <AppDropdown>
+      <template #trigger>
+        <button
+          type="button"
+          class="post-actions__item"
+          :class="{
+            'post-actions__item--reposted':
+              reposted,
+          }"
+          :disabled="repostDisabled"
+          :aria-label="
+            reposted
+              ? 'Đã đăng lại'
+              : 'Đăng lại'
+          "
+        >
+          <span class="post-actions__icon">
+            ↻
+          </span>
 
-      <span class="post-actions__label">
-        Đăng lại
-      </span>
-    </button>
+          <span
+            v-if="repostsCount > 0"
+            class="post-actions__count"
+          >
+            {{ repostsCount }}
+          </span>
+
+          <span
+            v-else
+            class="post-actions__label"
+          >
+            Đăng lại
+          </span>
+        </button>
+      </template>
+
+      <button
+        type="button"
+        class="post-actions__menu-item"
+        :disabled="repostDisabled"
+        @click="$emit('repost')"
+      >
+        {{ reposted
+          ? 'Hoàn tác đăng lại'
+          : 'Đăng lại'
+        }}
+      </button>
+
+      <button
+        type="button"
+        class="post-actions__menu-item"
+        @click="$emit('quote')"
+      >
+        Trích dẫn
+      </button>
+    </AppDropdown>
 
     <button
       type="button"

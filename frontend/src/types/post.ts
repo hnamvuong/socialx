@@ -89,3 +89,9 @@ export interface QuotedPost {
 export interface CreatePostOptions {
   quotedPostId?: number | null
 }
+
+export interface PostRepostState {
+  postId: number
+  reposted: boolean
+  repostsCount: number
+}

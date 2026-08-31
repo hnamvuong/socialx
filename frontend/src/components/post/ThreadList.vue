@@ -10,6 +10,7 @@ import {
 import type {
   Post,
   PostLikeState,
+  PostRepostState,
 } from '@/types/post'
 
 const props = defineProps<{
@@ -22,6 +23,8 @@ defineEmits<{
   deleted: [postId: number]
   reply: [post: Post]
   likeChanged: [state: PostLikeState]
+  repostChanged: [state: PostRepostState]
+  quoteCreated: [post: Post]
 }>()
 
 const tree =
@@ -63,6 +66,18 @@ const tree =
       @like-changed="
         $emit(
           'likeChanged',
+          $event
+        )
+      "
+      @repost-changed="
+        $emit(
+          'repostChanged',
+          $event
+        )
+      "
+      @quote-created="
+        $emit(
+          'quoteCreated',
           $event
         )
       "
