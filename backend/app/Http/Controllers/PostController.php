@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\CreateReplyRequest;
 use App\Http\Requests\UpdatePostRequest;
+use App\Models\Bookmark;
 use App\Models\Like;
 use App\Models\Post;
 use App\Models\Repost;
@@ -167,6 +168,7 @@ class PostController extends Controller
                     'post' => $this->postData(
                         $post,
                         false,
+                        false,
                         false
                     ),
                 ],
@@ -217,12 +219,22 @@ class PostController extends Controller
                 )
                 ->exists();
 
+        $bookmarkedByViewer =
+            $post
+                ->bookmarks()
+                ->where(
+                    'user_id',
+                    $request->user()->id
+                )
+                ->exists();
+
         return response()->json([
             'data' => [
                 'post' => $this->postData(
                     $post,
                     $likedByViewer,
-                    $repostedByViewer
+                    $repostedByViewer,
+                    $bookmarkedByViewer
                 ),
             ],
         ]);
@@ -262,7 +274,8 @@ class PostController extends Controller
     private function postData(
         Post $post,
         bool $likedByViewer = false,
-        bool $repostedByViewer = false
+        bool $repostedByViewer = false,
+        bool $bookmarkedByViewer = false
     ): array {
         return [
             'id' => $post->id,
@@ -317,6 +330,7 @@ class PostController extends Controller
             'quoted_post' => $this->quotedPostData(
                 $post->quotedPost
             ),
+            'bookmarked_by_me' => $bookmarkedByViewer,
         ];
     }
 
@@ -341,6 +355,7 @@ class PostController extends Controller
 
         $likedByViewer = false;
         $repostedByViewer = false;
+        $bookmarkedByViewer = false;
 
         if ($viewer) {
             $likedByViewer =
@@ -360,6 +375,15 @@ class PostController extends Controller
                         $viewer->id
                     )
                     ->exists();
+
+            $bookmarkedByViewer =
+                $post
+                    ->bookmarks()
+                    ->where(
+                        'user_id',
+                        $viewer->id
+                    )
+                    ->exists();
         }
 
         abort_if(
@@ -372,7 +396,8 @@ class PostController extends Controller
                 'post' => $this->postData(
                     $post,
                     $likedByViewer,
-                    $repostedByViewer
+                    $repostedByViewer,
+                    $bookmarkedByViewer
                 ),
             ],
         ]);
@@ -500,6 +525,7 @@ class PostController extends Controller
                     'post' => $this->postData(
                         $reply,
                         false,
+                        false,
                         false
                     ),
                 ],
@@ -586,6 +612,8 @@ class PostController extends Controller
 
         $repostedPostIds = collect();
 
+        $bookmarkedPostIds = collect();
+
         if ($viewer) {
             $likedPostIds =
                 Like::query()
@@ -616,6 +644,21 @@ class PostController extends Controller
                         'post_id'
                     )
                     ->flip();
+
+            $bookmarkedPostIds =
+                Bookmark::query()
+                    ->where(
+                        'user_id',
+                        $viewer->id
+                    )
+                    ->whereIn(
+                        'post_id',
+                        $postIds
+                    )
+                    ->pluck(
+                        'post_id'
+                    )
+                    ->flip();
         }
 
         return response()->json([
@@ -626,6 +669,9 @@ class PostController extends Controller
                         $root->id
                     ),
                     $repostedPostIds->has(
+                        $root->id
+                    ),
+                    $bookmarkedPostIds->has(
                         $root->id
                     )
                 ),
@@ -638,6 +684,9 @@ class PostController extends Controller
                                 $reply->id
                             ),
                             $repostedPostIds->has(
+                                $reply->id
+                            ),
+                            $bookmarkedPostIds->has(
                                 $reply->id
                             )
                         )
@@ -867,5 +916,79 @@ class PostController extends Controller
                 ->values()
                 ->all(),
         ];
+    }
+
+    public function bookmark(
+        Request $request,
+        Post $post
+    ): JsonResponse {
+        $user =
+            $request->user();
+
+        abort_if(
+            $post->user->status !== 'active',
+            404
+        );
+
+        $existingBookmark =
+            Bookmark::query()
+                ->where(
+                    'user_id',
+                    $user->id
+                )
+                ->where(
+                    'post_id',
+                    $post->id
+                )
+                ->first();
+
+        if (! $existingBookmark) {
+            $bookmark =
+                new Bookmark;
+
+            $bookmark->user_id =
+                $user->id;
+
+            $bookmark->post_id =
+                $post->id;
+
+            $bookmark->save();
+        }
+
+        return response()->json([
+            'data' => [
+                'bookmarked' => true,
+            ],
+        ]);
+    }
+
+    public function unbookmark(
+        Request $request,
+        Post $post
+    ): JsonResponse {
+        $user =
+            $request->user();
+
+        abort_if(
+            $post->user->status !== 'active',
+            404
+        );
+
+        Bookmark::query()
+            ->where(
+                'user_id',
+                $user->id
+            )
+            ->where(
+                'post_id',
+                $post->id
+            )
+            ->delete();
+
+        return response()->json([
+            'data' => [
+                'bookmarked' => false,
+            ],
+        ]);
     }
 }

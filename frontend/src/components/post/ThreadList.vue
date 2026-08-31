@@ -9,6 +9,7 @@ import {
 
 import type {
   Post,
+  PostBookmarkState,
   PostLikeState,
   PostRepostState,
 } from '@/types/post'
@@ -25,6 +26,7 @@ defineEmits<{
   likeChanged: [state: PostLikeState]
   repostChanged: [state: PostRepostState]
   quoteCreated: [post: Post]
+  bookmarkChanged: [state: PostBookmarkState]
 }>()
 
 const tree =
@@ -78,6 +80,12 @@ const tree =
       @quote-created="
         $emit(
           'quoteCreated',
+          $event
+        )
+      "
+      @bookmark-changed="
+        $emit(
+          'bookmarkChanged',
           $event
         )
       "

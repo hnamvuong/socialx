@@ -32,6 +32,8 @@ export interface Post {
   reposts_count: number
   reposted_by_me: boolean
 
+  bookmarked_by_me: boolean
+
   user: PostAuthor
 
   media: PostMedia[]
@@ -94,4 +96,15 @@ export interface PostRepostState {
   postId: number
   reposted: boolean
   repostsCount: number
+}
+
+export interface PostBookmarkState {
+  postId: number
+  bookmarked: boolean
+}
+
+export interface BookmarkResponse {
+  data: {
+    bookmarked: boolean
+  }
 }

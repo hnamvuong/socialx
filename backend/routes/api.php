@@ -137,4 +137,16 @@ Route::middleware('auth:sanctum')->group(function () {
         PostController::class,
         'unrepost',
     ]);
+
+    Route::post('/posts/{post}/bookmark', [
+        PostController::class,
+        'bookmark',
+    ]
+    );
+
+    Route::delete('/posts/{post}/bookmark', [
+        PostController::class,
+        'unbookmark',
+    ]
+    );
 });

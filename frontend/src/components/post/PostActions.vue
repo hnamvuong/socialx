@@ -9,6 +9,9 @@ defineProps<{
   reposted: boolean
   repostsCount: number
   repostDisabled?: boolean
+
+  bookmarked: boolean
+  bookmarkDisabled?: boolean
 }>()
 
 defineEmits<{
@@ -16,6 +19,7 @@ defineEmits<{
   like: []
   repost: []
   quote: []
+  bookmark: []
 }>()
 </script>
 
@@ -137,18 +141,28 @@ defineEmits<{
     <button
       type="button"
       class="post-actions__item"
-      disabled
-      title="Đánh dấu"
+      :class="{
+        'post-actions__item--bookmarked':
+          bookmarked,
+      }"
+      :disabled="bookmarkDisabled"
+      :aria-pressed="bookmarked"
+      :aria-label="
+        bookmarked
+          ? 'Bỏ lưu bài viết'
+          : 'Lưu bài viết'
+      "
+      @click="$emit('bookmark')"
     >
-      <span
-        class="post-actions__icon"
-        aria-hidden="true"
-      >
-        ◇
+      <span class="post-actions__icon">
+        {{ bookmarked ? '◆' : '◇' }}
       </span>
 
       <span class="post-actions__label">
-        Lưu
+        {{ bookmarked
+          ? 'Đã lưu'
+          : 'Lưu'
+        }}
       </span>
     </button>
   </div>

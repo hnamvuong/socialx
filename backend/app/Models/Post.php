@@ -105,4 +105,11 @@ class Post extends Model
             'quoted_post_id'
         );
     }
+
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(
+            Bookmark::class
+        );
+    }
 }

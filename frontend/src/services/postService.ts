@@ -1,6 +1,7 @@
 import api from './api'
 
 import type {
+  BookmarkResponse,
   CreatePostOptions,
   LikeResponse,
   PostResponse,
@@ -175,6 +176,28 @@ export async function unrepostPost(
   const response =
     await api.delete<RepostResponse>(
       `/posts/${postId}/repost`,
+    )
+
+  return response.data
+}
+
+export async function bookmarkPost(
+  postId: number,
+): Promise<BookmarkResponse> {
+  const response =
+    await api.post<BookmarkResponse>(
+      `/posts/${postId}/bookmark`,
+    )
+
+  return response.data
+}
+
+export async function unbookmarkPost(
+  postId: number,
+): Promise<BookmarkResponse> {
+  const response =
+    await api.delete<BookmarkResponse>(
+      `/posts/${postId}/bookmark`,
     )
 
   return response.data

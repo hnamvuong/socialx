@@ -26,15 +26,18 @@ import {
 } from '@/utils/date'
 import type {
   Post,
+  PostBookmarkState,
   PostLikeState,
   PostRepostState,
 } from '@/types/post'
 import axios from 'axios'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import {
+  bookmarkPost,
   deletePost,
   likePost,
   repostPost,
+  unbookmarkPost,
   unlikePost,
   unrepostPost,
 } from '@/services/postService'
@@ -50,6 +53,7 @@ const emit = defineEmits<{
   likeChanged: [state: PostLikeState]
   repostChanged: [state: PostRepostState]
   quoteCreated: [post: Post]
+  bookmarkChanged: [state: PostBookmarkState]
 }>()
 
 const authStore = useAuthStore()
@@ -436,6 +440,104 @@ function handleQuoteCreated(
     post,
   )
 }
+
+const bookmarking = ref(false)
+
+async function handleBookmark(): Promise<void> {
+  if (bookmarking.value) {
+    return
+  }
+
+  if (!authStore.isAuthenticated) {
+    toastStore.error(
+      'Bạn cần đăng nhập để lưu bài viết.',
+    )
+
+    return
+  }
+
+  const previousBookmarked =
+    props.post.bookmarked_by_me
+
+  const optimisticBookmarked =
+    !previousBookmarked
+
+  bookmarking.value = true
+
+  emit(
+    'bookmarkChanged',
+    {
+      postId:
+        props.post.id,
+
+      bookmarked:
+        optimisticBookmarked,
+    },
+  )
+
+  try {
+    const response =
+      optimisticBookmarked
+        ? await bookmarkPost(
+            props.post.id,
+          )
+        : await unbookmarkPost(
+            props.post.id,
+          )
+
+    emit(
+      'bookmarkChanged',
+      {
+        postId:
+          props.post.id,
+
+        bookmarked:
+          response.data.bookmarked,
+      },
+    )
+  } catch (error: unknown) {
+    emit(
+      'bookmarkChanged',
+      {
+        postId:
+          props.post.id,
+
+        bookmarked:
+          previousBookmarked,
+      },
+    )
+
+    if (
+      axios.isAxiosError(error)
+      && error.response?.status === 401
+    ) {
+      toastStore.error(
+        'Phiên đăng nhập không còn hợp lệ.',
+      )
+
+      return
+    }
+
+    if (
+      axios.isAxiosError(error)
+      && error.response?.status === 404
+    ) {
+      toastStore.error(
+        'Bài viết không còn tồn tại.',
+      )
+
+      return
+    }
+
+    toastStore.error(
+      optimisticBookmarked
+        ? 'Không thể lưu bài viết.'
+        : 'Không thể bỏ lưu bài viết.',
+    )
+  } finally {
+    bookmarking.value = false
+  }
+}
 </script>
 
 <template>
@@ -576,6 +678,8 @@ function handleQuoteCreated(
         :reposted="post.reposted_by_me"
         :reposts-count="post.reposts_count"
         :repost-disabled="reposting"
+        :bookmarked="post.bookmarked_by_me"
+        :bookmark-disabled="bookmarking"
         @reply="
           $emit(
             'reply',
@@ -585,6 +689,7 @@ function handleQuoteCreated(
         @like="handleLike"
         @repost="handleRepost"
         @quote="handleQuote"
+        @bookmark="handleBookmark"
       />
     </div>
 

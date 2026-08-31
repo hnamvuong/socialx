@@ -70,6 +70,11 @@
       color:
         var(--color-success);
     }
+
+    &--bookmarked {
+      color:
+        var(--color-info);
+    }
   }
 
   &__menu-item {

@@ -23,6 +23,7 @@ import {
 
 import type {
   Post,
+  PostBookmarkState,
   PostLikeState,
   PostRepostState,
 } from '@/types/post'
@@ -280,6 +281,49 @@ async function handleQuoteCreated(
     `/post/${post.id}`
   )
 }
+
+function handlePostBookmarkChanged(
+  state: PostBookmarkState,
+): void {
+  if (
+    rootPost.value?.id ===
+    state.postId
+  ) {
+    rootPost.value = {
+      ...rootPost.value,
+
+      bookmarked_by_me:
+        state.bookmarked,
+    }
+
+    return
+  }
+
+  const index =
+    replies.value.findIndex(
+      (reply) =>
+        reply.id ===
+        state.postId,
+    )
+
+  if (index === -1) {
+    return
+  }
+
+  const reply =
+    replies.value[index]
+
+  if (!reply) {
+    return
+  }
+
+  replies.value[index] = {
+    ...reply,
+
+    bookmarked_by_me:
+      state.bookmarked,
+  }
+}
 </script>
 
 <template>
@@ -341,6 +385,7 @@ async function handleQuoteCreated(
           @like-changed="handlePostLikeChanged"
           @repost-changed="handlePostRepostChanged"
           @quote-created="handleQuoteCreated"
+          @bookmark-changed="handlePostBookmarkChanged"
         />
 
         <ReplyComposer
@@ -368,6 +413,7 @@ async function handleQuoteCreated(
           @like-changed="handlePostLikeChanged"
           @repost-changed="handlePostRepostChanged"
           @quote-created="handleQuoteCreated"
+          @bookmark-changed="handlePostBookmarkChanged"
         />
       </template>
 

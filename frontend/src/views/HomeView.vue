@@ -13,6 +13,7 @@ import {
 
 import type {
   Post,
+  PostBookmarkState,
   PostLikeState,
   PostRepostState,
 } from '@/types/post'
@@ -103,6 +104,24 @@ function handleQuoteCreated(
     post,
   )
 }
+
+function handlePostBookmarkChanged(
+  state: PostBookmarkState,
+): void {
+  const post =
+    createdPosts.value.find(
+      (item) =>
+        item.id ===
+        state.postId,
+    )
+
+  if (!post) {
+    return
+  }
+
+  post.bookmarked_by_me =
+    state.bookmarked
+}
 </script>
 
 <template>
@@ -140,6 +159,7 @@ function handleQuoteCreated(
           @like-changed="handlePostLikeChanged"
           @repost-changed="handlePostRepostChanged"
           @quote-created="handleQuoteCreated"
+          @bookmark-changed="handlePostBookmarkChanged"
         />
       </section>
 

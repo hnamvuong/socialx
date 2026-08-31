@@ -142,4 +142,21 @@ class User extends Authenticatable implements MustVerifyEmailContract
             )
             ->withTimestamps();
     }
+
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(
+            Bookmark::class
+        );
+    }
+
+    public function bookmarkedPosts(): BelongsToMany
+    {
+        return $this
+            ->belongsToMany(
+                Post::class,
+                'bookmarks'
+            )
+            ->withTimestamps();
+    }
 }

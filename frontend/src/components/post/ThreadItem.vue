@@ -2,6 +2,7 @@
 import PostCard from '@/components/post/PostCard.vue'
 import type {
   Post,
+  PostBookmarkState,
   PostLikeState,
   PostRepostState,
   ThreadNode,
@@ -19,6 +20,7 @@ defineEmits<{
   likeChanged: [state: PostLikeState]
   repostChanged: [state: PostRepostState]
   quoteCreated: [post: Post]
+  bookmarkChanged: [state: PostBookmarkState]
 }>()
 </script>
 
@@ -68,6 +70,12 @@ defineEmits<{
           $event
         )
       "
+      @bookmark-changed="
+        $emit(
+          'bookmarkChanged',
+          $event
+        )
+      "
     />
 
     <div
@@ -106,6 +114,12 @@ defineEmits<{
         @like-changed="
           $emit(
             'likeChanged',
+            $event
+          )
+        "
+        @bookmark-changed="
+          $emit(
+            'bookmarkChanged',
             $event
           )
         "
