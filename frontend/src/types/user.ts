@@ -87,3 +87,40 @@ export interface FollowListResponse {
     }
   }
 }
+
+export interface FollowRequestItem {
+  id: number
+  status: 'pending'
+  created_at: string
+
+  requester: FollowListUser
+}
+
+export interface FollowRequestListResponse {
+  data: {
+    requests: FollowRequestItem[]
+
+    pagination: {
+      current_page: number
+      last_page: number
+      per_page: number
+      total: number
+      has_more: boolean
+    }
+  }
+}
+
+export interface AcceptFollowRequestResponse {
+  data: {
+    accepted: boolean
+    requester_id: number
+    following: boolean
+  }
+}
+
+export interface RejectFollowRequestResponse {
+  data: {
+    rejected: boolean
+    requester_id: number
+  }
+}

@@ -496,4 +496,92 @@ class FollowController extends Controller
                 $user->is_verified,
         ];
     }
+
+    public function requests(
+        Request $request
+    ): JsonResponse {
+        $viewer =
+            $request->user();
+
+        $paginator =
+            FollowRequest::query()
+                ->where(
+                    'target_id',
+                    $viewer->id
+                )
+                ->where(
+                    'status',
+                    FollowRequest::STATUS_PENDING
+                )
+                ->whereHas(
+                    'requester',
+                    function ($query): void {
+                        $query->where(
+                            'status',
+                            'active'
+                        );
+                    }
+                )
+                ->with([
+                    'requester',
+                ])
+                ->orderByDesc(
+                    'created_at'
+                )
+                ->orderByDesc(
+                    'id'
+                )
+                ->paginate(
+                    perPage: 20
+                );
+
+        $requests =
+            $paginator
+                ->getCollection()
+                ->map(
+                    function (
+                        FollowRequest $followRequest
+                    ): array {
+                        $requester =
+                            $followRequest->requester;
+
+                        return [
+                            'id' => $followRequest->id,
+
+                            'status' => $followRequest->status,
+
+                            'created_at' => $followRequest->created_at,
+
+                            'requester' => $this->userListData(
+                                $requester
+                            ),
+                        ];
+                    }
+                )
+                ->values()
+                ->all();
+
+        return response()->json([
+            'data' => [
+                'requests' => $requests,
+
+                'pagination' => [
+                    'current_page' => $paginator
+                        ->currentPage(),
+
+                    'last_page' => $paginator
+                        ->lastPage(),
+
+                    'per_page' => $paginator
+                        ->perPage(),
+
+                    'total' => $paginator
+                        ->total(),
+
+                    'has_more' => $paginator
+                        ->hasMorePages(),
+                ],
+            ],
+        ]);
+    }
 }

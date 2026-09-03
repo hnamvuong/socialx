@@ -1,8 +1,11 @@
 import api from '@/services/api'
 
 import type {
+  AcceptFollowRequestResponse,
   FollowListResponse,
+  FollowRequestListResponse,
   FollowResponse,
+  RejectFollowRequestResponse,
 } from '@/types/user'
 
 export async function followUser(
@@ -56,6 +59,44 @@ export async function getFollowing(
           page,
         },
       },
+    )
+
+  return response.data
+}
+
+export async function getFollowRequests(
+  page = 1,
+): Promise<FollowRequestListResponse> {
+  const response =
+    await api.get<FollowRequestListResponse>(
+      '/follow-requests',
+      {
+        params: {
+          page,
+        },
+      },
+    )
+
+  return response.data
+}
+
+export async function acceptFollowRequest(
+  followRequestId: number,
+): Promise<AcceptFollowRequestResponse> {
+  const response =
+    await api.post<AcceptFollowRequestResponse>(
+      `/follow-requests/${followRequestId}/accept`,
+    )
+
+  return response.data
+}
+
+export async function rejectFollowRequest(
+  followRequestId: number,
+): Promise<RejectFollowRequestResponse> {
+  const response =
+    await api.delete<RejectFollowRequestResponse>(
+      `/follow-requests/${followRequestId}/reject`,
     )
 
   return response.data

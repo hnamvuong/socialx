@@ -1,0 +1,180 @@
+.follow-requests-page {
+  width: 100%;
+
+  &__topbar {
+    position: sticky;
+    z-index: 10;
+    top: 0;
+
+    display: flex;
+    align-items: center;
+
+    min-height: 64px;
+
+    padding:
+      8px
+      16px;
+
+    border-bottom:
+      1px solid var(--color-border);
+
+    background:
+      var(--color-background);
+
+    strong {
+      color:
+        var(--color-text-primary);
+
+      font-size: 18px;
+    }
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__item {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 12px;
+
+    padding:
+      14px
+      16px;
+
+    border-bottom:
+      1px solid var(--color-border);
+  }
+
+  &__user {
+    display: flex;
+
+    min-width: 0;
+
+    flex: 1;
+
+    gap: 12px;
+
+    color: inherit;
+
+    text-decoration: none;
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 48px;
+    height: 48px;
+
+    flex-shrink: 0;
+
+    overflow: hidden;
+
+    border-radius: 50%;
+
+    background:
+      var(--color-surface-secondary);
+
+    color:
+      var(--color-text-primary);
+
+    font-weight: 600;
+
+    img {
+      width: 100%;
+      height: 100%;
+
+      object-fit: cover;
+    }
+  }
+
+  &__user-content {
+    min-width: 0;
+
+    flex: 1;
+  }
+
+  &__name {
+    display: flex;
+    align-items: center;
+
+    gap: 4px;
+
+    color:
+      var(--color-text-primary);
+  }
+
+  &__username {
+    margin-top: 2px;
+
+    color:
+      var(--color-text-secondary);
+
+    font-size: 14px;
+  }
+
+  &__bio {
+    margin:
+      6px
+      0
+      0;
+
+    line-height: 1.4;
+
+    overflow-wrap: anywhere;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    gap: 8px;
+  }
+
+  &__state {
+    padding:
+      56px
+      24px;
+
+    text-align: center;
+
+    p {
+      color:
+        var(--color-text-secondary);
+    }
+  }
+
+  &__skeleton {
+    display: flex;
+
+    gap: 12px;
+
+    padding:
+      14px
+      16px;
+
+    border-bottom:
+      1px solid var(--color-border);
+  }
+
+  &__skeleton-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+
+    gap: 8px;
+  }
+
+  &__load-more {
+    display: flex;
+    justify-content: center;
+
+    padding: 20px;
+  }
+}

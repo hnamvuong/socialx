@@ -184,4 +184,9 @@ Route::middleware('auth:sanctum')->group(function () {
         FollowController::class,
         'reject',
     ]);
+
+    Route::get('/follow-requests', [
+        FollowController::class,
+        'requests',
+    ]);
 });

@@ -44,6 +44,18 @@ const router = createRouter({
     },
 
     {
+      path: '/follow-requests',
+      name: 'follow-requests',
+      component: () =>
+        import(
+          '@/views/FollowRequestsView.vue'
+        ),
+      meta: {
+        requiresAuth: true,
+      },
+    },
+
+    {
       path: '/post/:id',
       name: 'post-detail',
       component: PostDetailView,
