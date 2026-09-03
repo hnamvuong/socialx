@@ -244,7 +244,7 @@ onMounted(() => {
         <AppSkeleton
           v-for="index in 4"
           :key="index"
-          :height="140"
+          height="140px"
         />
       </div>
 

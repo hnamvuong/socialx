@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\FollowRequest;
 use App\Models\User;
+use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class FollowController extends Controller
 {
+    public function __construct(
+        private readonly StorageService $storage
+    ) {}
+
     public function follow(
         Request $request,
         User $user
@@ -311,5 +316,184 @@ class FollowController extends Controller
                 !== 'active',
             404
         );
+    }
+
+    public function followers(
+        string $username
+    ): JsonResponse {
+        $normalizedUsername =
+            strtolower(
+                trim($username)
+            );
+
+        $user =
+            User::query()
+                ->where([
+                    'username' => $normalizedUsername,
+
+                    'status' => 'active',
+                ])
+                ->firstOrFail();
+
+        $paginator =
+            $user
+                ->followers()
+                ->where(
+                    'users.status',
+                    'active'
+                )
+                ->orderByDesc(
+                    'follows.created_at'
+                )
+                ->select(
+                    'users.*'
+                )
+                ->paginate(
+                    perPage: 20
+                );
+
+        $users =
+            $paginator
+                ->getCollection()
+                ->map(
+                    fn (User $follower) => $this->userListData(
+                        $follower
+                    )
+                )
+                ->values()
+                ->all();
+
+        return response()->json([
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+
+                    'username' => $user->username,
+
+                    'display_name' => $user->display_name,
+                ],
+
+                'users' => $users,
+
+                'pagination' => [
+                    'current_page' => $paginator
+                        ->currentPage(),
+
+                    'last_page' => $paginator
+                        ->lastPage(),
+
+                    'per_page' => $paginator
+                        ->perPage(),
+
+                    'total' => $paginator
+                        ->total(),
+
+                    'has_more' => $paginator
+                        ->hasMorePages(),
+                ],
+            ],
+        ]);
+    }
+
+    public function following(
+        string $username
+    ): JsonResponse {
+        $normalizedUsername =
+            strtolower(
+                trim($username)
+            );
+
+        $user =
+            User::query()
+                ->where([
+                    'username' => $normalizedUsername,
+
+                    'status' => 'active',
+                ])
+                ->firstOrFail();
+
+        $paginator =
+            $user
+                ->following()
+                ->where(
+                    'users.status',
+                    'active'
+                )
+                ->orderByDesc(
+                    'follows.created_at'
+                )
+                ->select(
+                    'users.*'
+                )
+                ->paginate(
+                    perPage: 20
+                );
+
+        $users =
+            $paginator
+                ->getCollection()
+                ->map(
+                    fn (User $followingUser) => $this->userListData(
+                        $followingUser
+                    )
+                )
+                ->values()
+                ->all();
+
+        return response()->json([
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+
+                    'username' => $user->username,
+
+                    'display_name' => $user->display_name,
+                ],
+
+                'users' => $users,
+
+                'pagination' => [
+                    'current_page' => $paginator
+                        ->currentPage(),
+
+                    'last_page' => $paginator
+                        ->lastPage(),
+
+                    'per_page' => $paginator
+                        ->perPage(),
+
+                    'total' => $paginator
+                        ->total(),
+
+                    'has_more' => $paginator
+                        ->hasMorePages(),
+                ],
+            ],
+        ]);
+    }
+
+    private function userListData(
+        User $user
+    ): array {
+        return [
+            'id' => $user->id,
+
+            'username' => $user->username,
+
+            'display_name' => $user->display_name,
+
+            'bio' => $user->bio,
+
+            'avatar_url' => $this->storage
+                ->publicUrl(
+                    $user->avatar_path
+                ),
+
+            'is_private' => (bool)
+                $user->is_private,
+
+            'is_verified' => (bool)
+                $user->is_verified,
+        ];
     }
 }

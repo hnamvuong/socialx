@@ -314,7 +314,7 @@ onBeforeUnmount(() => {
           authStore.user
             ?.display_name
           ?? authStore.user
-            ?.name
+            ?.username
           ?? ''
         "
         :size="40"

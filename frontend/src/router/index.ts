@@ -20,6 +20,30 @@ const router = createRouter({
     },
 
     {
+      path: '/@:username/followers',
+      name: 'followers',
+      component: () =>
+        import(
+          '@/views/FollowListView.vue'
+        ),
+      props: {
+        mode: 'followers',
+      },
+    },
+
+    {
+      path: '/@:username/following',
+      name: 'following',
+      component: () =>
+        import(
+          '@/views/FollowListView.vue'
+        ),
+      props: {
+        mode: 'following',
+      },
+    },
+
+    {
       path: '/post/:id',
       name: 'post-detail',
       component: PostDetailView,

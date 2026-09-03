@@ -55,3 +55,35 @@ export interface FollowResponse {
     follow_requested: boolean
   }
 }
+
+export interface FollowListUser {
+  id: number
+  username: string
+  display_name: string | null
+
+  bio: string | null
+  avatar_url: string | null
+
+  is_private: boolean
+  is_verified: boolean
+}
+
+export interface FollowListResponse {
+  data: {
+    user: {
+      id: number
+      username: string
+      display_name: string | null
+    }
+
+    users: FollowListUser[]
+
+    pagination: {
+      current_page: number
+      last_page: number
+      per_page: number
+      total: number
+      has_more: boolean
+    }
+  }
+}

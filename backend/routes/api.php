@@ -70,6 +70,16 @@ Route::get('/users/{username}', [
     'show',
 ]);
 
+Route::get('/users/{username}/followers', [
+    FollowController::class,
+    'followers',
+]);
+
+Route::get('/users/{username}/following', [
+    FollowController::class,
+    'following',
+]);
+
 Route::get('/posts/{post}', [
     PostController::class,
     'show',

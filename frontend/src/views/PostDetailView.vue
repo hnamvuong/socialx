@@ -447,7 +447,7 @@ function handlePostBookmarkChanged(
 
         <AppButton
           variant="secondary"
-          @click="loadPost"
+          @click="loadThread"
         >
           Thử lại
         </AppButton>
