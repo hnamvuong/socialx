@@ -4,22 +4,37 @@ import {
   ref,
   watch,
 } from 'vue'
+
 import { useRoute } from 'vue-router'
+
+import axios from 'axios'
+
 import MainLayout from '@/layouts/MainLayout.vue'
+
 import ProfileDetails from '@/components/profile/ProfileDetails.vue'
 import ProfileHeader from '@/components/profile/ProfileHeader.vue'
+import FollowButton from '@/components/profile/FollowButton.vue'
+
 import AppButton from '@/components/ui/AppButton.vue'
 import AppSkeleton from '@/components/ui/AppSkeleton.vue'
+
 import EditProfileModal from '@/components/profile/EditProfileModal.vue'
+
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
+
 import {
   getUserProfile,
 } from '@/services/userService'
+
+import {
+  followUser,
+  unfollowUser,
+} from '@/services/followService'
+
 import type {
   PublicUserProfile,
 } from '@/types/user'
-import axios from 'axios'
 
 const route = useRoute()
 
@@ -32,6 +47,14 @@ const notFound = ref(false)
 
 const errorMessage =
   ref<string | null>(null)
+
+const authStore = useAuthStore()
+
+const toastStore = useToastStore()
+
+const editProfileOpen = ref(false)
+
+const followLoading = ref(false)
 
 function getUsername(): string {
   const username =
@@ -52,7 +75,6 @@ async function loadProfile(): Promise<void> {
   }
 
   loading.value = true
-
   notFound.value = false
   errorMessage.value = null
   user.value = null
@@ -75,12 +97,6 @@ async function loadProfile(): Promise<void> {
     loading.value = false
   }
 }
-
-const authStore = useAuthStore()
-
-const toastStore = useToastStore()
-
-const editProfileOpen = ref(false)
 
 const isOwnProfile = computed(() => {
   return (
@@ -111,6 +127,182 @@ function handleProfileMediaUpdated(
   toastStore.success(
     'Đã cập nhật hình ảnh hồ sơ.'
   )
+}
+
+async function handleFollowToggle(): Promise<void> {
+  if (
+    followLoading.value
+    || !user.value
+  ) {
+    return
+  }
+
+  if (
+    !authStore.isAuthenticated
+  ) {
+    toastStore.error(
+      'Bạn cần đăng nhập để theo dõi người dùng.',
+    )
+
+    return
+  }
+
+  if (isOwnProfile.value) {
+    return
+  }
+
+  const currentUser = user.value
+
+  const previousRelationship = currentUser.relationship
+
+  const previousFollowing = currentUser.following
+
+  const previousFollowRequested = currentUser.follow_requested
+
+  const previousFollowersCount = currentUser.followers_count
+
+  const shouldFollow = previousRelationship === 'none'
+
+  followLoading.value = true
+
+  /*
+   * Optimistic update
+   */
+  if (shouldFollow) {
+    if (currentUser.is_private) {
+      currentUser.relationship = 'requested'
+
+      currentUser.following = false
+
+      currentUser.follow_requested = true
+    } else {
+      currentUser.relationship = 'following'
+
+      currentUser.following = true
+
+      currentUser.follow_requested = false
+
+      currentUser.followers_count = previousFollowersCount + 1
+    }
+  } else {
+    currentUser.relationship = 'none'
+
+    currentUser.following = false
+
+    currentUser.follow_requested = false
+
+    if (
+      previousRelationship
+        === 'following'
+    ) {
+      currentUser.followers_count =
+        Math.max(
+          0,
+          previousFollowersCount - 1,
+        )
+    }
+  }
+
+  try {
+    const response =
+      shouldFollow
+        ? await followUser(
+            currentUser.id,
+          )
+        : await unfollowUser(
+            currentUser.id,
+          )
+
+    const serverRelationship = response.data.relationship
+
+    const wasFollowing = previousRelationship === 'following'
+
+    const isFollowing = serverRelationship === 'following'
+
+    currentUser.relationship = serverRelationship
+
+    currentUser.following = response.data.following
+
+    currentUser.follow_requested = response.data.follow_requested
+
+    /*
+     * Server response hiện chưa trả followers_count.
+     *
+     * Vì vậy count được tính từ trạng thái
+     * trước request và trạng thái server xác nhận.
+     */
+    if (
+      !wasFollowing
+      && isFollowing
+    ) {
+      currentUser.followers_count =
+        previousFollowersCount + 1
+    } else if (
+      wasFollowing
+      && !isFollowing
+    ) {
+      currentUser.followers_count =
+        Math.max(
+          0,
+          previousFollowersCount - 1,
+        )
+    } else {
+      currentUser.followers_count = previousFollowersCount
+    }
+  } catch (error: unknown) {
+    /*
+     * Rollback chính xác về state trước click.
+     */
+    currentUser.relationship = previousRelationship
+
+    currentUser.following = previousFollowing
+
+    currentUser.follow_requested = previousFollowRequested
+
+    currentUser.followers_count = previousFollowersCount
+
+    if (
+      axios.isAxiosError(error)
+      && error.response?.status === 401
+    ) {
+      toastStore.error(
+        'Phiên đăng nhập không còn hợp lệ.',
+      )
+
+      return
+    }
+
+    if (
+      axios.isAxiosError(error)
+      && error.response?.status === 404
+    ) {
+      toastStore.error(
+        'Người dùng không còn khả dụng.',
+      )
+
+      return
+    }
+
+    if (
+      axios.isAxiosError(error)
+      && error.response?.status === 422
+    ) {
+      toastStore.error(
+        'Không thể theo dõi tài khoản này.',
+      )
+
+      return
+    }
+
+    toastStore.error(
+      shouldFollow
+        ? 'Không thể theo dõi người dùng.'
+        : 'Không thể cập nhật trạng thái theo dõi.',
+    )
+  } finally {
+    followLoading.value =
+      false
+  }
 }
 
 watch(
@@ -179,11 +371,9 @@ watch(
         <ProfileHeader
           :user="user"
         >
-          <template
-            v-if="isOwnProfile"
-            #actions
-          >
+          <template #actions>
             <AppButton
+              v-if="isOwnProfile"
               variant="secondary"
               @click="
                 editProfileOpen = true
@@ -191,6 +381,19 @@ watch(
             >
               Chỉnh sửa hồ sơ
             </AppButton>
+
+            <FollowButton
+              v-else
+              :relationship="
+                user.relationship
+              "
+              :loading="
+                followLoading
+              "
+              @toggle="
+                handleFollowToggle
+              "
+            />
           </template>
         </ProfileHeader>
 
@@ -230,23 +433,35 @@ watch(
 
         <AppButton
           variant="secondary"
-          @click="loadProfile"
+          @click="
+            loadProfile
+          "
         >
           Thử lại
         </AppButton>
       </div>
     </section>
+
     <EditProfileModal
-      v-if="user && isOwnProfile"
-      :open="editProfileOpen"
-      :user="user"
+      v-if="
+        user
+        && isOwnProfile
+      "
+      :open="
+        editProfileOpen
+      "
+      :user="
+        user
+      "
       @close="
         editProfileOpen = false
       "
       @updated="
         handleProfileUpdated
       "
-      @media-updated="handleProfileMediaUpdated"
+      @media-updated="
+        handleProfileMediaUpdated
+      "
     />
   </MainLayout>
 </template>

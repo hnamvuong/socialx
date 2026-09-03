@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\BookmarkController;
+use App\Http\Controllers\FollowController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileMediaController;
@@ -152,5 +153,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/bookmarks', [
         BookmarkController::class,
         'index',
+    ]);
+
+    Route::post('/users/{user}/follow', [
+        FollowController::class,
+        'follow',
+    ]);
+
+    Route::delete('/users/{user}/follow', [
+        FollowController::class,
+        'unfollow',
+    ]);
+
+    Route::post('/follow-requests/{followRequest}/accept', [
+        FollowController::class,
+        'accept',
+    ]);
+
+    Route::delete('/follow-requests/{followRequest}/reject', [
+        FollowController::class,
+        'reject',
     ]);
 });

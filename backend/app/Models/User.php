@@ -159,4 +159,60 @@ class User extends Authenticatable implements MustVerifyEmailContract
             )
             ->withTimestamps();
     }
+
+    public function outgoingFollows(): HasMany
+    {
+        return $this->hasMany(
+            Follow::class,
+            'follower_id'
+        );
+    }
+
+    public function incomingFollows(): HasMany
+    {
+        return $this->hasMany(
+            Follow::class,
+            'following_id'
+        );
+    }
+
+    public function following(): BelongsToMany
+    {
+        return $this
+            ->belongsToMany(
+                User::class,
+                'follows',
+                'follower_id',
+                'following_id'
+            )
+            ->withTimestamps();
+    }
+
+    public function followers(): BelongsToMany
+    {
+        return $this
+            ->belongsToMany(
+                User::class,
+                'follows',
+                'following_id',
+                'follower_id'
+            )
+            ->withTimestamps();
+    }
+
+    public function sentFollowRequests(): HasMany
+    {
+        return $this->hasMany(
+            FollowRequest::class,
+            'requester_id'
+        );
+    }
+
+    public function receivedFollowRequests(): HasMany
+    {
+        return $this->hasMany(
+            FollowRequest::class,
+            'target_id'
+        );
+    }
 }

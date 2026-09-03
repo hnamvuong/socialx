@@ -11,6 +11,11 @@ export interface PublicUserProfile {
   cover_url: string | null
   is_private: boolean
   is_verified: boolean
+  followers_count: number
+  following_count: number
+  relationship: FollowRelationship
+  following: boolean
+  follow_requested: boolean
   created_at: string
 }
 
@@ -30,5 +35,23 @@ export interface UpdateProfilePayload {
 export interface UpdateProfileResponse {
   data: {
     user: PublicUserProfile
+  }
+}
+
+export type FollowRelationship =
+  | 'self'
+  | 'none'
+  | 'following'
+  | 'requested'
+
+export interface FollowResponse {
+  data: {
+    relationship:
+      | 'none'
+      | 'following'
+      | 'requested'
+
+    following: boolean
+    follow_requested: boolean
   }
 }
