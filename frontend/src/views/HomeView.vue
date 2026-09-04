@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import {
+  nextTick,
+  onBeforeUnmount,
   onMounted,
   ref
 } from 'vue'
@@ -38,6 +40,10 @@ const feedError = ref<string | null>(null)
 const nextCursor = ref<string | null>(null)
 
 const hasMore = ref(false)
+
+const loadMoreSentinel = ref<HTMLElement | null>(null)
+
+let loadMoreObserver: IntersectionObserver | null = null
 
 function handlePostUpdated(
   updatedPost: Post,
@@ -204,13 +210,82 @@ async function loadMore(): Promise<void> {
     feedError.value =
       'Không thể tải thêm bài viết.'
   } finally {
-    loadingMore.value =
-      false
+    loadingMore.value = false
+
+    await nextTick()
+
+    if (
+      hasMore.value
+      && nextCursor.value
+      && isLoadMoreSentinelVisible()
+    ) {
+      void loadMore()
+    }
   }
 }
 
-onMounted(() => {
-  void loadFollowingFeed()
+function setupInfiniteScroll(): void {
+  loadMoreObserver?.disconnect()
+
+  if (
+    !loadMoreSentinel.value
+  ) {
+    return
+  }
+
+  loadMoreObserver =
+    new IntersectionObserver(
+      (entries) => {
+        const entry =
+          entries[0]
+
+        if (
+          !entry?.isIntersecting
+        ) {
+          return
+        }
+
+        void loadMore()
+      },
+      {
+        root: null,
+        rootMargin:
+          '300px 0px',
+        threshold: 0,
+      },
+    )
+
+  loadMoreObserver.observe(
+    loadMoreSentinel.value,
+  )
+}
+
+function isLoadMoreSentinelVisible(): boolean {
+  const element = loadMoreSentinel.value
+
+  if (!element) {
+    return false
+  }
+
+  const rect = element.getBoundingClientRect()
+
+  return (
+    rect.top <= window.innerHeight + 300 && rect.bottom >= -300
+  )
+}
+
+onMounted(async () => {
+  await loadFollowingFeed()
+
+  await nextTick()
+
+  setupInfiniteScroll()
+})
+
+onBeforeUnmount(() => {
+  loadMoreObserver?.disconnect()
+
+  loadMoreObserver = null
 })
 </script>
 
@@ -293,19 +368,19 @@ onMounted(() => {
 
         <div
           v-if="hasMore"
-          class="home-feed-load-more"
+          ref="loadMoreSentinel"
+          class="home-feed-sentinel"
+          aria-hidden="true"
+        />
+
+        <div
+          v-if="loadingMore"
+          class="home-feed-loading-more"
         >
-          <AppButton
-            variant="secondary"
-            :disabled="loadingMore"
-            @click="loadMore"
-          >
-            {{
-              loadingMore
-                ? 'Đang tải...'
-                : 'Xem thêm'
-            }}
-          </AppButton>
+          <AppSkeleton
+            width="100%"
+            height="140px"
+          />
         </div>
       </section>
 

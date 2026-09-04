@@ -145,9 +145,11 @@
   gap: 1px;
 }
 
-.home-feed-load-more {
-  display: flex;
-  justify-content: center;
+.home-feed-sentinel {
+  width: 100%;
+  height: 1px;
+}
 
-  padding: 20px 16px;
+.home-feed-loading-more {
+  padding: 12px 0;
 }

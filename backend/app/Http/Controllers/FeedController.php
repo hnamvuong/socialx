@@ -71,7 +71,7 @@ class FeedController extends Controller
                     'posts.*'
                 )
                 ->cursorPaginate(
-                    perPage: 20
+                    perPage: 1
                 );
 
         $posts =
