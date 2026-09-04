@@ -4,6 +4,7 @@ import type {
   BookmarkResponse,
   CreatePostOptions,
   FollowingFeedResponse,
+  HashtagPostsResponse,
   LikeResponse,
   PostResponse,
   RepostResponse,
@@ -225,6 +226,26 @@ export async function getForYouFeed(
   const response =
     await api.get<FollowingFeedResponse>(
       '/feed/for-you',
+      {
+        params:
+          cursor
+            ? {
+                cursor,
+              }
+            : {},
+      },
+    )
+
+  return response.data
+}
+
+export async function getHashtagPosts(
+  hashtag: string,
+  cursor: string | null = null,
+): Promise<HashtagPostsResponse> {
+  const response =
+    await api.get<HashtagPostsResponse>(
+      `/hashtags/${encodeURIComponent(hashtag)}/posts`,
       {
         params:
           cursor

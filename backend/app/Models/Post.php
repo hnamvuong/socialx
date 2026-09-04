@@ -112,4 +112,14 @@ class Post extends Model
             Bookmark::class
         );
     }
+
+    public function hashtags(): BelongsToMany
+    {
+        return $this
+            ->belongsToMany(
+                Hashtag::class,
+                'post_hashtags'
+            )
+            ->withTimestamps();
+    }
 }

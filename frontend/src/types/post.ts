@@ -137,3 +137,16 @@ export interface CursorPaginationMeta {
   next_cursor: string | null
   has_more: boolean
 }
+
+export interface HashtagSummary {
+  id: number
+  name: string
+}
+
+export interface HashtagPostsResponse {
+  data: {
+    hashtag: HashtagSummary
+    posts: Post[]
+    pagination: CursorPaginationMeta
+  }
+}

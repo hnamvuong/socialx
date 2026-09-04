@@ -6,9 +6,11 @@ use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\CreateReplyRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Bookmark;
+use App\Models\Hashtag;
 use App\Models\Like;
 use App\Models\Post;
 use App\Models\Repost;
+use App\Services\HashtagParser;
 use App\Services\PostResponseService;
 use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
@@ -21,8 +23,58 @@ class PostController extends Controller
 {
     public function __construct(
         private readonly StorageService $storage,
-        private readonly PostResponseService $postResponse
+        private readonly PostResponseService $postResponse,
+        private readonly HashtagParser $hashtagParser
     ) {}
+
+    private function syncHashtags(
+        Post $post,
+        ?string $content
+    ): void {
+        $hashtagNames =
+            $this->hashtagParser->parse(
+                $content ?? ''
+            );
+
+        if ($hashtagNames === []) {
+            $post
+                ->hashtags()
+                ->sync([]);
+
+            return;
+        }
+
+        $hashtagIds = [];
+
+        foreach ($hashtagNames as $hashtagName) {
+            $hashtag =
+                Hashtag::query()
+                    ->where(
+                        'name',
+                        $hashtagName
+                    )
+                    ->first();
+
+            if (! $hashtag) {
+                $hashtag =
+                    new Hashtag;
+
+                $hashtag->name =
+                    $hashtagName;
+
+                $hashtag->save();
+            }
+
+            $hashtagIds[] =
+                $hashtag->id;
+        }
+
+        $post
+            ->hashtags()
+            ->sync(
+                $hashtagIds
+            );
+    }
 
     public function store(
         CreatePostRequest $request
@@ -75,6 +127,13 @@ class PostController extends Controller
                                     'content'
                                 ] ?? null,
                         ]);
+
+                    $this->syncHashtags(
+                        $post,
+                        $validated[
+                            'content'
+                        ] ?? null
+                    );
 
                     if ($quotedPost) {
                         $post->quoted_post_id =
@@ -188,6 +247,11 @@ class PostController extends Controller
         $post->content = $validated['content'] ?? null;
 
         $post->save();
+
+        $this->syncHashtags(
+            $post,
+            $post->content
+        );
 
         $post->load([
             'user',
@@ -374,6 +438,13 @@ class PostController extends Controller
                                         'content'
                                     ] ?? null,
                             ]);
+
+                    $this->syncHashtags(
+                        $reply,
+                        $validated[
+                            'content'
+                        ] ?? null
+                    );
 
                     $reply->parent_post_id = $post->id;
 
