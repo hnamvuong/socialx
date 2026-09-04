@@ -72,6 +72,15 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
+
+    {
+      path: '/hashtag/:hashtag',
+      name: 'hashtag',
+      component: () =>
+        import(
+          '@/views/HashtagView.vue'
+        ),
+    },
   ],
 })
 

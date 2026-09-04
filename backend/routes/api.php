@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FollowController;
+use App\Http\Controllers\HashtagController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileMediaController;
@@ -89,6 +90,11 @@ Route::get('/posts/{post}', [
 Route::get('/posts/{post}/thread', [
     PostController::class,
     'thread',
+]);
+
+Route::get('/hashtags/{hashtag}/posts', [
+    HashtagController::class,
+    'posts',
 ]);
 
 Route::middleware('auth:sanctum')->group(function () {
