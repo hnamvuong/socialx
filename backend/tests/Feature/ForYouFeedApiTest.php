@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Follow;
+use App\Models\Like;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -239,5 +241,221 @@ class ForYouFeedApiTest extends TestCase
                 '/api/feed/for-you'
             )
             ->assertUnauthorized();
+    }
+
+    public function test_for_you_ranking_is_cached(): void
+    {
+        $viewer =
+            User::factory()->create();
+
+        $author =
+            User::factory()->create();
+
+        $post =
+            Post::factory()
+                ->for($author)
+                ->create();
+
+        Sanctum::actingAs(
+            $viewer
+        );
+
+        $this
+            ->getJson(
+                '/api/feed/for-you'
+            )
+            ->assertOk();
+
+        $cacheKey =
+            "feed:for-you:ranking:v1:user:{$viewer->id}";
+
+        $this->assertTrue(
+            Cache::has(
+                $cacheKey
+            )
+        );
+
+        $cached =
+            Cache::get(
+                $cacheKey
+            );
+
+        $this->assertIsArray(
+            $cached
+        );
+
+        $this->assertContains(
+            $post->id,
+            $cached
+        );
+    }
+
+    public function test_for_you_cache_contains_only_ranked_post_ids(): void
+    {
+        $viewer =
+            User::factory()->create();
+
+        $author =
+            User::factory()->create();
+
+        $post =
+            Post::factory()
+                ->for($author)
+                ->create();
+
+        Sanctum::actingAs(
+            $viewer
+        );
+
+        $this
+            ->getJson(
+                '/api/feed/for-you'
+            )
+            ->assertOk();
+
+        $cacheKey =
+            "feed:for-you:ranking:v1:user:{$viewer->id}";
+
+        $cached =
+            Cache::get(
+                $cacheKey
+            );
+
+        $this->assertIsArray(
+            $cached
+        );
+
+        $this->assertSame(
+            [$post->id],
+            $cached
+        );
+    }
+
+    public function test_cached_ranking_does_not_stale_like_state(): void
+    {
+        $viewer =
+            User::factory()->create();
+
+        $author =
+            User::factory()->create();
+
+        $post =
+            Post::factory()
+                ->for($author)
+                ->create();
+
+        Sanctum::actingAs(
+            $viewer
+        );
+
+        /*
+         * Request đầu:
+         * ranking được cache.
+         */
+        $this
+            ->getJson(
+                '/api/feed/for-you'
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.posts.0.liked_by_me',
+                false
+            );
+
+        /*
+         * Viewer like sau khi ranking
+         * đã được cache.
+         */
+        $like =
+        new Like;
+
+        $like->user_id =
+            $viewer->id;
+
+        $like->post_id =
+            $post->id;
+
+        $like->save();
+
+        /*
+         * Request sau vẫn dùng ranking cache,
+         * nhưng interaction state phải fresh.
+         */
+        $this
+            ->getJson(
+                '/api/feed/for-you'
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.posts.0.liked_by_me',
+                true
+            );
+    }
+
+    public function test_cached_ranking_does_not_bypass_private_account_privacy(): void
+    {
+        $viewer =
+            User::factory()->create();
+
+        $privateAuthor =
+            User::factory()->create([
+                'is_private' => true,
+            ]);
+
+        $post =
+            Post::factory()
+                ->for($privateAuthor)
+                ->create();
+
+        $this->createFollow(
+            $viewer,
+            $privateAuthor
+        );
+
+        Sanctum::actingAs(
+            $viewer
+        );
+
+        /*
+         * Request đầu:
+         * private post hợp lệ và được cache.
+         */
+        $this
+            ->getJson(
+                '/api/feed/for-you'
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.posts.0.id',
+                $post->id
+            );
+
+        /*
+         * Unfollow sau khi cache đã tạo.
+         */
+        Follow::query()
+            ->where(
+                'follower_id',
+                $viewer->id
+            )
+            ->where(
+                'following_id',
+                $privateAuthor->id
+            )
+            ->delete();
+
+        /*
+         * Ranking cache vẫn có thể còn post ID,
+         * nhưng fetch page phải kiểm tra privacy lại.
+         */
+        $this
+            ->getJson(
+                '/api/feed/for-you'
+            )
+            ->assertOk()
+            ->assertJsonCount(
+                0,
+                'data.posts'
+            );
     }
 }

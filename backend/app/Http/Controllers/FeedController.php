@@ -8,6 +8,7 @@ use App\Models\Repost;
 use App\Services\PostResponseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class FeedController extends Controller
 {
@@ -177,6 +178,11 @@ class FeedController extends Controller
 
         $perPage = 20;
 
+        $cacheKey =
+            "feed:for-you:ranking:v1:user:{$viewerId}";
+
+        $rankingTtl = now()->addSeconds(30);
+
         /*
          * ------------------------------------------------------------
          * 1. Những user mà viewer đang follow
@@ -188,8 +194,11 @@ class FeedController extends Controller
                 ->pluck('users.id')
                 ->map(
                     fn ($id): int => (int) $id
-                )
-                ->all();
+                );
+
+        $followedUserLookup =
+            $followedUserIds
+                ->flip();
 
         /*
          * ------------------------------------------------------------
@@ -262,92 +271,15 @@ class FeedController extends Controller
                 ->map(
                     fn ($id): int => (int) $id
                 )
-                ->unique()
-                ->all();
+                ->unique();
+
+        $interactedAuthorLookup =
+            $interactedAuthorIds
+                ->flip();
 
         /*
          * ------------------------------------------------------------
-         * 3. Candidate posts
-         * ------------------------------------------------------------
-         *
-         * Bài 48:
-         * - chỉ top-level post
-         * - không recommend post của chính viewer
-         * - author phải active
-         * - public user được recommend
-         * - private user chỉ được thấy nếu viewer đã follow
-         *
-         * Limit 200 là candidate pool tạm thời.
-         * ------------------------------------------------------------
-         */
-        $candidateQuery =
-            Post::query()
-                ->whereNull(
-                    'posts.parent_post_id'
-                )
-                ->where(
-                    'posts.user_id',
-                    '!=',
-                    $viewerId
-                )
-                ->whereHas(
-                    'user',
-                    function ($query): void {
-                        $query->where(
-                            'status',
-                            'active'
-                        );
-                    }
-                )
-                ->where(
-                    function ($query) use ($followedUserIds): void {
-                        $query
-                            ->whereHas(
-                                'user',
-                                function ($userQuery): void {
-                                    $userQuery->where(
-                                        'is_private',
-                                        false
-                                    );
-                                }
-                            );
-
-                        if (
-                            count(
-                                $followedUserIds
-                            ) > 0
-                        ) {
-                            $query->orWhereIn(
-                                'posts.user_id',
-                                $followedUserIds
-                            );
-                        }
-                    }
-                )
-                ->with([
-                    'user',
-                    'media',
-                    'quotedPost.user',
-                    'quotedPost.media',
-                ])
-                ->withCount([
-                    'likes',
-                    'reposts',
-                ])
-                ->orderByDesc(
-                    'posts.created_at'
-                )
-                ->orderByDesc(
-                    'posts.id'
-                )
-                ->limit(200);
-
-        $candidates =
-            $candidateQuery->get();
-
-        /*
-         * ------------------------------------------------------------
-         * 4. Ranking
+         * 3. Ranking
          * ------------------------------------------------------------
          *
          * score =
@@ -357,146 +289,175 @@ class FeedController extends Controller
          * interest     * 0.15
          * ------------------------------------------------------------
          */
-        $rankedPosts =
-            $candidates
-                ->map(
-                    function (Post $post) use (
-                        $followedUserIds,
-                        $interactedAuthorIds
-                    ): array {
-                        /*
-                         * Recency
-                         *
-                         * 0 giờ   -> 1
-                         * 84 giờ  -> 0.5
-                         * 168 giờ -> 0
-                         */
-                        $ageHours =
-                            max(
-                                0,
-                                $post
-                                    ->created_at
-                                    ->diffInHours(
-                                        now()
-                                    )
-                            );
-
-                        $recencyScore =
-                            max(
-                                0,
-                                min(
-                                    1,
-                                    1 - (
-                                        $ageHours / 168
-                                    )
-                                )
-                            );
-
-                        /*
-                         * Engagement
-                         *
-                         * Like   = 1 point
-                         * Repost = 2 points
-                         *
-                         * 50 điểm trở lên
-                         * được normalize thành 1.
-                         */
-                        $engagementPoints =
-                            (int) $post->likes_count
-                            +
-                            (
-                                (int) $post->reposts_count
-                                * 2
-                            );
-
-                        $engagementScore =
-                            min(
-                                1,
-                                $engagementPoints / 50
-                            );
-
-                        /*
-                         * Relationship
-                         */
-                        $relationshipScore =
-                            in_array(
-                                (int) $post->user_id,
-                                $followedUserIds,
-                                true
+        $rankedPostIds =
+            Cache::remember(
+                $cacheKey,
+                $rankingTtl,
+                function () use (
+                    $viewerId,
+                    $followedUserIds,
+                    $followedUserLookup,
+                    $interactedAuthorLookup
+                ): array {
+                    $candidates =
+                        Post::query()
+                            ->select([
+                                'posts.id',
+                                'posts.user_id',
+                                'posts.created_at',
+                            ])
+                            ->whereNull(
+                                'posts.parent_post_id'
                             )
-                                ? 1
-                                : 0;
-
-                        /*
-                         * Interest
-                         */
-                        $interestScore =
-                            in_array(
-                                (int) $post->user_id,
-                                $interactedAuthorIds,
-                                true
+                            ->where(
+                                'posts.user_id',
+                                '!=',
+                                $viewerId
                             )
-                                ? 1
-                                : 0;
-
-                        $rankingScore =
-                            (
-                                $recencyScore
-                                * 0.35
+                            ->whereHas(
+                                'user',
+                                function ($query): void {
+                                    $query->where(
+                                        'status',
+                                        'active'
+                                    );
+                                }
                             )
-                            +
-                            (
-                                $engagementScore
-                                * 0.30
+                            ->where(
+                                function ($query) use ($followedUserIds): void {
+                                    $query->whereHas(
+                                        'user',
+                                        function ($userQuery): void {
+                                            $userQuery->where(
+                                                'is_private',
+                                                false
+                                            );
+                                        }
+                                    );
+
+                                    if (
+                                        $followedUserIds->isNotEmpty()
+                                    ) {
+                                        $query->orWhereIn(
+                                            'posts.user_id',
+                                            $followedUserIds->all()
+                                        );
+                                    }
+                                }
                             )
-                            +
-                            (
-                                $relationshipScore
-                                * 0.20
+                            ->withCount([
+                                'likes',
+                                'reposts',
+                            ])
+                            ->orderByDesc(
+                                'posts.created_at'
                             )
-                            +
-                            (
-                                $interestScore
-                                * 0.15
-                            );
+                            ->orderByDesc(
+                                'posts.id'
+                            )
+                            ->limit(200)
+                            ->get();
 
-                        return [
-                            'post' => $post,
+                    return $candidates
+                        ->map(
+                            function (Post $post) use (
+                                $followedUserLookup,
+                                $interactedAuthorLookup
+                            ): array {
+                                $ageHours =
+                                    max(
+                                        0,
+                                        $post
+                                            ->created_at
+                                            ->diffInHours(
+                                                now()
+                                            )
+                                    );
 
-                            'score' => $rankingScore,
-                        ];
-                    }
-                )
-                ->sort(
-                    function (
-                        array $left,
-                        array $right
-                    ): int {
-                        /*
-                         * Score cao hơn lên trước.
-                         */
-                        $scoreCompare =
-                            $right['score']
-                            <=>
-                            $left['score'];
+                                $recencyScore =
+                                    max(
+                                        0,
+                                        min(
+                                            1,
+                                            1 - (
+                                                $ageHours / 168
+                                            )
+                                        )
+                                    );
 
-                        if (
-                            $scoreCompare !== 0
-                        ) {
-                            return $scoreCompare;
-                        }
+                                $engagementPoints =
+                                    (int) $post->likes_count
+                                    +
+                                    (
+                                        (int) $post->reposts_count
+                                        * 2
+                                    );
 
-                        /*
-                         * Nếu score bằng nhau:
-                         * Post ID lớn hơn lên trước.
-                         */
-                        return
-                            $right['post']->id
-                            <=>
-                            $left['post']->id;
-                    }
-                )
-                ->values();
+                                $engagementScore =
+                                    min(
+                                        1,
+                                        $engagementPoints / 50
+                                    );
+
+                                $relationshipScore =
+                                    $followedUserLookup
+                                        ->has(
+                                            (int) $post->user_id
+                                        )
+                                        ? 1
+                                        : 0;
+
+                                $interestScore =
+                                    $interactedAuthorLookup
+                                        ->has(
+                                            (int) $post->user_id
+                                        )
+                                        ? 1
+                                        : 0;
+
+                                $rankingScore =
+                                    ($recencyScore * 0.35)
+                                    +
+                                    ($engagementScore * 0.30)
+                                    +
+                                    ($relationshipScore * 0.20)
+                                    +
+                                    ($interestScore * 0.15);
+
+                                return [
+                                    'id' => (int) $post->id,
+
+                                    'score' => $rankingScore,
+                                ];
+                            }
+                        )
+                        ->sort(
+                            function (
+                                array $left,
+                                array $right
+                            ): int {
+                                $scoreCompare =
+                                    $right['score']
+                                    <=>
+                                    $left['score'];
+
+                                if (
+                                    $scoreCompare !== 0
+                                ) {
+                                    return $scoreCompare;
+                                }
+
+                                return
+                                    $right['id']
+                                    <=>
+                                    $left['id'];
+                            }
+                        )
+                        ->pluck('id')
+                        ->values()
+                        ->all();
+                }
+            );
 
         /*
          * ------------------------------------------------------------
@@ -539,16 +500,11 @@ class FeedController extends Controller
                 (int) $decodedCursor;
 
             $cursorIndex =
-                $rankedPosts
-                    ->search(
-                        function (
-                            array $item
-                        ) use ($cursorPostId): bool {
-                            return
-                                (int) $item['post']->id
-                                === $cursorPostId;
-                        }
-                    );
+                array_search(
+                    $cursorPostId,
+                    $rankedPostIds,
+                    true
+                );
 
             abort_if(
                 $cursorIndex === false,
@@ -565,49 +521,117 @@ class FeedController extends Controller
          * 6. Lấy batch hiện tại
          * ------------------------------------------------------------
          */
-        $pageItems =
-            $rankedPosts
-                ->slice(
-                    $startIndex,
-                    $perPage
+        $pagePostIds =
+            array_slice(
+                $rankedPostIds,
+                $startIndex,
+                $perPage
+            );
+
+        $postsById =
+            Post::query()
+                ->whereIn(
+                    'posts.id',
+                    $pagePostIds
                 )
-                ->values();
+                ->whereNull(
+                    'posts.parent_post_id'
+                )
+                ->whereHas(
+                    'user',
+                    function ($query) use ($viewerId): void {
+                        $query
+                            ->where(
+                                'status',
+                                'active'
+                            )
+                            ->where(
+                                function ($privacyQuery) use ($viewerId): void {
+                                    $privacyQuery
+                                        ->where(
+                                            'is_private',
+                                            false
+                                        )
+                                        ->orWhereExists(
+                                            function ($followQuery) use ($viewerId): void {
+                                                $followQuery
+                                                    ->selectRaw('1')
+                                                    ->from('follows')
+                                                    ->whereColumn(
+                                                        'follows.following_id',
+                                                        'users.id'
+                                                    )
+                                                    ->where(
+                                                        'follows.follower_id',
+                                                        $viewerId
+                                                    );
+                                            }
+                                        );
+                                }
+                            );
+                    }
+                )
+                ->with([
+                    'user',
+                    'media',
+                    'quotedPost.user',
+                    'quotedPost.media',
+                ])
+                ->withCount([
+                    'likes',
+                    'reposts',
+                ])
+                ->get()
+                ->keyBy('id');
 
         $posts =
-            $pageItems
-                ->pluck(
-                    'post'
+            collect(
+                $pagePostIds
+            )
+                ->map(
+                    fn (int $postId) => $postsById->get(
+                        $postId
+                    )
                 )
+                ->filter()
                 ->values();
 
+        $nextIndex =
+            $startIndex
+            + count(
+                $pagePostIds
+            );
+
         $hasMore =
-            (
-                $startIndex
-                + $pageItems->count()
-            )
-            < $rankedPosts->count();
+            $nextIndex
+            < count(
+                $rankedPostIds
+            );
 
         /*
          * Cursor tiếp theo = ID của post cuối
          * trong batch hiện tại.
          */
         $nextCursor =
-            null;
+    null;
 
         if (
             $hasMore
-            && $posts->isNotEmpty()
+            && count(
+                $pagePostIds
+            ) > 0
         ) {
-            /** @var Post|null $lastPost */
-            $lastPost =
-                $posts->last();
+            $lastPostId =
+                $pagePostIds[
+                    array_key_last(
+                        $pagePostIds
+                    )
+                ];
 
-            if ($lastPost) {
-                $nextCursor =
-                    base64_encode(
-                        (string) $lastPost->id
-                    );
-            }
+            $nextCursor =
+                base64_encode(
+                    (string) $lastPostId
+                );
         }
 
         /*
