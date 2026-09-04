@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\BookmarkController;
+use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
@@ -188,5 +189,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/follow-requests', [
         FollowController::class,
         'requests',
+    ]);
+
+    Route::get('/feed/following', [
+        FeedController::class,
+        'following',
     ]);
 });

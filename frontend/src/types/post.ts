@@ -124,3 +124,10 @@ export interface BookmarkListResponse {
     pagination: PaginationMeta
   }
 }
+
+export interface FollowingFeedResponse {
+  data: {
+    posts: Post[]
+    pagination: PaginationMeta
+  }
+}

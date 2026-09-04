@@ -3,6 +3,7 @@ import api from './api'
 import type {
   BookmarkResponse,
   CreatePostOptions,
+  FollowingFeedResponse,
   LikeResponse,
   PostResponse,
   RepostResponse,
@@ -198,6 +199,22 @@ export async function unbookmarkPost(
   const response =
     await api.delete<BookmarkResponse>(
       `/posts/${postId}/bookmark`,
+    )
+
+  return response.data
+}
+
+export async function getFollowingFeed(
+  page = 1,
+): Promise<FollowingFeedResponse> {
+  const response =
+    await api.get<FollowingFeedResponse>(
+      '/feed/following',
+      {
+        params: {
+          page,
+        },
+      },
     )
 
   return response.data
