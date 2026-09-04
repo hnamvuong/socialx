@@ -5,6 +5,7 @@
         "reposted",
         "reposting",
         "reposts",
+        "TIMESTAMPDIFF",
         "unbookmark",
         "unrepost"
     ]

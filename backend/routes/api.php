@@ -195,4 +195,9 @@ Route::middleware('auth:sanctum')->group(function () {
         FeedController::class,
         'following',
     ]);
+
+    Route::get('/feed/for-you', [
+        FeedController::class,
+        'forYou',
+    ]);
 });

@@ -218,3 +218,22 @@ export async function getFollowingFeed(
 
   return response.data
 }
+
+export async function getForYouFeed(
+  cursor: string | null = null,
+): Promise<FollowingFeedResponse> {
+  const response =
+    await api.get<FollowingFeedResponse>(
+      '/feed/for-you',
+      {
+        params:
+          cursor
+            ? {
+                cursor,
+              }
+            : {},
+      },
+    )
+
+  return response.data
+}

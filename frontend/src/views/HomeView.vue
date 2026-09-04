@@ -3,7 +3,8 @@ import {
   nextTick,
   onBeforeUnmount,
   onMounted,
-  ref
+  ref,
+  watch
 } from 'vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import ThemeSwitcher from '@/components/theme/ThemeSwitcher.vue'
@@ -25,6 +26,7 @@ import type {
 
 import {
   getFollowingFeed,
+  getForYouFeed,
 } from '@/services/postService'
 
 const authStore = useAuthStore()
@@ -132,7 +134,7 @@ function handlePostBookmarkChanged(
     state.bookmarked
 }
 
-async function loadFollowingFeed(): Promise<void> {
+async function loadFeed(): Promise<void> {
   if (
     !authStore.isAuthenticated
   ) {
@@ -147,7 +149,7 @@ async function loadFollowingFeed(): Promise<void> {
 
   try {
     const response =
-      await getFollowingFeed()
+      await getActiveFeed()
 
     posts.value =
       response.data.posts
@@ -167,7 +169,9 @@ async function loadFollowingFeed(): Promise<void> {
     posts.value = []
 
     feedError.value =
-      'Không thể tải Following Feed.'
+      feedMode.value === 'for-you'
+        ? 'Không thể tải For You Feed.'
+        : 'Không thể tải Following Feed.'
   } finally {
     loadingFeed.value =
       false
@@ -187,7 +191,7 @@ async function loadMore(): Promise<void> {
 
   try {
     const response =
-      await getFollowingFeed(
+      await getActiveFeed(
         nextCursor.value,
       )
 
@@ -274,8 +278,31 @@ function isLoadMoreSentinelVisible(): boolean {
   )
 }
 
+type FeedMode =
+  | 'for-you'
+  | 'following'
+
+const feedMode = ref<FeedMode>('for-you')
+
+async function getActiveFeed(
+  cursor: string | null = null,
+) {
+  if (
+    feedMode.value ===
+    'for-you'
+  ) {
+    return getForYouFeed(
+      cursor,
+    )
+  }
+
+  return getFollowingFeed(
+    cursor,
+  )
+}
+
 onMounted(async () => {
-  await loadFollowingFeed()
+  await loadFeed()
 
   await nextTick()
 
@@ -287,6 +314,20 @@ onBeforeUnmount(() => {
 
   loadMoreObserver = null
 })
+
+watch(
+  feedMode,
+  async () => {
+    loadMoreObserver
+      ?.disconnect()
+
+    await loadFeed()
+
+    await nextTick()
+
+    setupInfiniteScroll()
+  },
+)
 </script>
 
 <template>
@@ -299,6 +340,39 @@ onBeforeUnmount(() => {
 
         <ThemeSwitcher />
       </header>
+
+      <nav
+        class="feed-tabs"
+        aria-label="Chọn Feed"
+      >
+        <button
+          type="button"
+          class="feed-tabs__item"
+          :class="{
+            'feed-tabs__item--active':
+              feedMode === 'for-you',
+          }"
+          @click="
+            feedMode = 'for-you'
+          "
+        >
+          Dành cho bạn
+        </button>
+
+        <button
+          type="button"
+          class="feed-tabs__item"
+          :class="{
+            'feed-tabs__item--active':
+              feedMode === 'following',
+          }"
+          @click="
+            feedMode = 'following'
+          "
+        >
+          Đang theo dõi
+        </button>
+      </nav>
 
       <PostComposer
         v-if="authStore.isAuthenticated"
@@ -345,7 +419,7 @@ onBeforeUnmount(() => {
 
         <AppButton
           variant="secondary"
-          @click="loadFollowingFeed"
+          @click="loadFeed"
         >
           Thử lại
         </AppButton>
@@ -389,11 +463,19 @@ onBeforeUnmount(() => {
         class="feed-placeholder"
       >
         <h2 class="feed-placeholder__title">
-          Following Feed đang trống
+          {{
+            feedMode === 'for-you'
+              ? 'Chưa có đề xuất'
+              : 'Following Feed đang trống'
+          }}
         </h2>
 
         <p class="feed-placeholder__description">
-          Hãy theo dõi người dùng để xem bài viết của họ tại đây.
+          {{
+            feedMode === 'for-you'
+              ? 'SocialX chưa tìm thấy bài viết phù hợp với bạn.'
+              : 'Hãy theo dõi người dùng để xem bài viết của họ tại đây.'
+          }}
         </p>
       </div>
 
