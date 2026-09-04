@@ -450,8 +450,8 @@ class FollowingFeedApiTest extends TestCase
                 'data.posts'
             )
             ->assertJsonPath(
-                'data.pagination.total',
-                0
+                'data.pagination.next_cursor',
+                null
             )
             ->assertJsonPath(
                 'data.pagination.has_more',
@@ -468,7 +468,7 @@ class FollowingFeedApiTest extends TestCase
             ->assertUnauthorized();
     }
 
-    public function test_following_feed_is_paginated(): void
+    public function test_following_feed_uses_cursor_pagination(): void
     {
         $viewer =
             User::factory()->create();
@@ -490,36 +490,87 @@ class FollowingFeedApiTest extends TestCase
             $viewer
         );
 
-        $this
-            ->getJson(
-                '/api/feed/following?page=1'
-            )
+        $response =
+            $this->getJson(
+                '/api/feed/following'
+            );
+
+        $response
             ->assertOk()
             ->assertJsonCount(
                 20,
                 'data.posts'
             )
             ->assertJsonPath(
-                'data.pagination.current_page',
-                1
-            )
-            ->assertJsonPath(
-                'data.pagination.last_page',
-                2
-            )
-            ->assertJsonPath(
-                'data.pagination.total',
-                21
+                'data.pagination.per_page',
+                20
             )
             ->assertJsonPath(
                 'data.pagination.has_more',
                 true
             );
 
-        $this
-            ->getJson(
-                '/api/feed/following?page=2'
-            )
+        $nextCursor =
+            $response->json(
+                'data.pagination.next_cursor'
+            );
+
+        $this->assertIsString(
+            $nextCursor
+        );
+
+        $this->assertNotSame(
+            '',
+            $nextCursor
+        );
+    }
+
+    public function test_following_feed_can_load_next_cursor(): void
+    {
+        $viewer =
+            User::factory()->create();
+
+        $author =
+            User::factory()->create();
+
+        $this->createFollow(
+            $viewer,
+            $author
+        );
+
+        Post::factory()
+            ->count(21)
+            ->for($author)
+            ->create();
+
+        Sanctum::actingAs(
+            $viewer
+        );
+
+        $firstResponse =
+            $this->getJson(
+                '/api/feed/following'
+            );
+
+        $firstResponse
+            ->assertOk()
+            ->assertJsonCount(
+                20,
+                'data.posts'
+            );
+
+        $cursor =
+            $firstResponse->json(
+                'data.pagination.next_cursor'
+            );
+
+        $secondResponse =
+            $this->getJson(
+                '/api/feed/following?cursor='
+                .urlencode($cursor)
+            );
+
+        $secondResponse
             ->assertOk()
             ->assertJsonCount(
                 1,
@@ -528,6 +579,127 @@ class FollowingFeedApiTest extends TestCase
             ->assertJsonPath(
                 'data.pagination.has_more',
                 false
+            )
+            ->assertJsonPath(
+                'data.pagination.next_cursor',
+                null
+            );
+    }
+
+    public function test_cursor_pages_do_not_duplicate_posts(): void
+    {
+        $viewer =
+            User::factory()->create();
+
+        $author =
+            User::factory()->create();
+
+        $this->createFollow(
+            $viewer,
+            $author
+        );
+
+        Post::factory()
+            ->count(25)
+            ->for($author)
+            ->create();
+
+        Sanctum::actingAs(
+            $viewer
+        );
+
+        $firstResponse =
+            $this->getJson(
+                '/api/feed/following'
+            );
+
+        $cursor =
+            $firstResponse->json(
+                'data.pagination.next_cursor'
+            );
+
+        $secondResponse =
+            $this->getJson(
+                '/api/feed/following?cursor='
+                .urlencode($cursor)
+            );
+
+        $firstIds =
+            collect(
+                $firstResponse->json(
+                    'data.posts'
+                )
+            )
+                ->pluck('id');
+
+        $secondIds =
+            collect(
+                $secondResponse->json(
+                    'data.posts'
+                )
+            )
+                ->pluck('id');
+
+        $duplicates =
+            $firstIds
+                ->intersect(
+                    $secondIds
+                );
+
+        $this->assertCount(
+            0,
+            $duplicates
+        );
+    }
+
+    public function test_cursor_order_is_stable_when_posts_have_same_timestamp(): void
+    {
+        $viewer =
+            User::factory()->create();
+
+        $author =
+            User::factory()->create();
+
+        $this->createFollow(
+            $viewer,
+            $author
+        );
+
+        $timestamp =
+            now();
+
+        $olderIdPost =
+            Post::factory()
+                ->for($author)
+                ->create([
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ]);
+
+        $newerIdPost =
+            Post::factory()
+                ->for($author)
+                ->create([
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ]);
+
+        Sanctum::actingAs(
+            $viewer
+        );
+
+        $this
+            ->getJson(
+                '/api/feed/following'
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'data.posts.0.id',
+                $newerIdPost->id
+            )
+            ->assertJsonPath(
+                'data.posts.1.id',
+                $olderIdPost->id
             );
     }
 }

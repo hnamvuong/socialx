@@ -205,15 +205,14 @@ export async function unbookmarkPost(
 }
 
 export async function getFollowingFeed(
-  page = 1,
+  cursor: string | null = null,
 ): Promise<FollowingFeedResponse> {
   const response =
     await api.get<FollowingFeedResponse>(
       '/feed/following',
       {
-        params: {
-          page,
-        },
+        params:
+          cursor ? { cursor } : {},
       },
     )
 

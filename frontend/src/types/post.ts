@@ -128,6 +128,12 @@ export interface BookmarkListResponse {
 export interface FollowingFeedResponse {
   data: {
     posts: Post[]
-    pagination: PaginationMeta
+    pagination: CursorPaginationMeta
   }
+}
+
+export interface CursorPaginationMeta {
+  per_page: number
+  next_cursor: string | null
+  has_more: boolean
 }

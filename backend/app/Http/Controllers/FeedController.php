@@ -70,13 +70,14 @@ class FeedController extends Controller
                 ->select(
                     'posts.*'
                 )
-                ->paginate(
+                ->cursorPaginate(
                     perPage: 20
                 );
 
         $posts =
-            $paginator
-                ->getCollection();
+            collect(
+                $paginator->items()
+            );
 
         $postIds =
             $posts->pluck('id');
@@ -151,17 +152,12 @@ class FeedController extends Controller
                 'posts' => $serializedPosts,
 
                 'pagination' => [
-                    'current_page' => $paginator
-                        ->currentPage(),
-
-                    'last_page' => $paginator
-                        ->lastPage(),
-
                     'per_page' => $paginator
                         ->perPage(),
 
-                    'total' => $paginator
-                        ->total(),
+                    'next_cursor' => $paginator
+                        ->nextCursor()
+                        ?->encode(),
 
                     'has_more' => $paginator
                         ->hasMorePages(),

@@ -35,7 +35,7 @@ const loadingMore = ref(false)
 
 const feedError = ref<string | null>(null)
 
-const currentPage = ref(1)
+const nextCursor = ref<string | null>(null)
 
 const hasMore = ref(false)
 
@@ -141,16 +141,16 @@ async function loadFollowingFeed(): Promise<void> {
 
   try {
     const response =
-      await getFollowingFeed(1)
+      await getFollowingFeed()
 
     posts.value =
       response.data.posts
 
-    currentPage.value =
+    nextCursor.value =
       response
         .data
         .pagination
-        .current_page
+        .next_cursor
 
     hasMore.value =
       response
@@ -172,6 +172,7 @@ async function loadMore(): Promise<void> {
   if (
     loadingMore.value
     || !hasMore.value
+    || !nextCursor.value
   ) {
     return
   }
@@ -181,18 +182,18 @@ async function loadMore(): Promise<void> {
   try {
     const response =
       await getFollowingFeed(
-        currentPage.value + 1,
+        nextCursor.value,
       )
 
     posts.value.push(
       ...response.data.posts,
     )
 
-    currentPage.value =
+    nextCursor.value =
       response
         .data
         .pagination
-        .current_page
+        .next_cursor
 
     hasMore.value =
       response
