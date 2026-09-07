@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\UserMentioned;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\CreateReplyRequest;
 use App\Http\Requests\UpdatePostRequest;
@@ -96,7 +97,7 @@ class PostController extends Controller
             return;
         }
 
-        $mentionedUserIds =
+        $mentionedUsers =
             User::query()
                 ->whereIn(
                     'username',
@@ -106,17 +107,62 @@ class PostController extends Controller
                     'status',
                     'active'
                 )
-                ->pluck('id')
+                ->get([
+                    'id',
+                    'username',
+                ]);
+
+        $changes =
+            $post
+                ->mentionedUsers()
+                ->sync(
+                    $mentionedUsers
+                        ->pluck('id')
+                        ->all()
+                );
+
+        $attachedUserIds =
+            collect(
+                $changes['attached']
+                ?? []
+            )
                 ->map(
                     fn ($id): int => (int) $id
-                )
-                ->all();
+                );
 
-        $post
-            ->mentionedUsers()
-            ->sync(
-                $mentionedUserIds
+        if (
+            $attachedUserIds->isEmpty()
+        ) {
+            return;
+        }
+
+        $actor =
+            $post->user;
+
+        foreach (
+            $mentionedUsers as $mentionedUser
+        ) {
+            if (
+                ! $attachedUserIds->contains(
+                    $mentionedUser->id
+                )
+            ) {
+                continue;
+            }
+
+            if (
+                $mentionedUser->id ===
+                $actor->id
+            ) {
+                continue;
+            }
+
+            UserMentioned::dispatch(
+                $post,
+                $mentionedUser,
+                $actor
             );
+        }
     }
 
     public function store(
