@@ -10,7 +10,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView
+      component: HomeView,
     },
 
     {
@@ -22,10 +22,7 @@ const router = createRouter({
     {
       path: '/@:username/followers',
       name: 'followers',
-      component: () =>
-        import(
-          '@/views/FollowListView.vue'
-        ),
+      component: () => import('@/views/FollowListView.vue'),
       props: {
         mode: 'followers',
       },
@@ -34,10 +31,7 @@ const router = createRouter({
     {
       path: '/@:username/following',
       name: 'following',
-      component: () =>
-        import(
-          '@/views/FollowListView.vue'
-        ),
+      component: () => import('@/views/FollowListView.vue'),
       props: {
         mode: 'following',
       },
@@ -46,10 +40,7 @@ const router = createRouter({
     {
       path: '/follow-requests',
       name: 'follow-requests',
-      component: () =>
-        import(
-          '@/views/FollowRequestsView.vue'
-        ),
+      component: () => import('@/views/FollowRequestsView.vue'),
       meta: {
         requiresAuth: true,
       },
@@ -64,10 +55,7 @@ const router = createRouter({
     {
       path: '/bookmarks',
       name: 'bookmarks',
-      component: () =>
-        import(
-          '@/views/BookmarkView.vue'
-        ),
+      component: () => import('@/views/BookmarkView.vue'),
       meta: {
         requiresAuth: true,
       },
@@ -76,10 +64,13 @@ const router = createRouter({
     {
       path: '/hashtag/:hashtag',
       name: 'hashtag',
-      component: () =>
-        import(
-          '@/views/HashtagView.vue'
-        ),
+      component: () => import('@/views/HashtagView.vue'),
+    },
+
+    {
+      path: '/search',
+      name: 'search',
+      component: () => import('@/views/SearchView.vue'),
     },
   ],
 })

@@ -16,80 +16,41 @@ export async function createPost(
   media: File[],
   options: CreatePostOptions = {},
 ): Promise<PostResponse> {
-  const formData =
-    new FormData()
+  const formData = new FormData()
 
-  const normalizedContent =
-    content.trim()
+  const normalizedContent = content.trim()
 
   if (normalizedContent) {
-    formData.append(
-      'content',
-      normalizedContent,
-    )
+    formData.append('content', normalizedContent)
   }
 
-  if (
-    options.quotedPostId
-    !== undefined
-    && options.quotedPostId
-    !== null
-  ) {
-    formData.append(
-      'quoted_post_id',
-      String(
-        options.quotedPostId,
-      ),
-    )
+  if (options.quotedPostId !== undefined && options.quotedPostId !== null) {
+    formData.append('quoted_post_id', String(options.quotedPostId))
   }
 
   media.forEach((file) => {
-    formData.append(
-      'media[]',
-      file,
-    )
+    formData.append('media[]', file)
   })
 
-  const response =
-    await api.post<PostResponse>(
-      '/posts',
-      formData,
-    )
+  const response = await api.post<PostResponse>('/posts', formData)
 
   return response.data
 }
 
-export async function updatePost(
-  postId: number,
-  content: string,
-): Promise<PostResponse> {
-  const response =
-    await api.patch<PostResponse>(
-      `/posts/${postId}`,
-      {
-        content:
-          content.trim() || null,
-      },
-    )
+export async function updatePost(postId: number, content: string): Promise<PostResponse> {
+  const response = await api.patch<PostResponse>(`/posts/${postId}`, {
+    content: content.trim() || null,
+  })
 
   return response.data
 }
 
-export async function deletePost(
-  postId: number,
-): Promise<void> {
-  await api.delete(
-    `/posts/${postId}`,
-  )
+export async function deletePost(postId: number): Promise<void> {
+  await api.delete(`/posts/${postId}`)
 }
 
-export async function getPost(
-  postId: number,
-): Promise<PostResponse> {
-  const response =
-    await api.get<PostResponse>(
-      `/posts/${postId}`,
-    )
+export async function getPost(postId: number): Promise<PostResponse> {
+  const response = await api.get<PostResponse>(`/posts/${postId}`)
 
   return response.data
 }
@@ -99,108 +60,61 @@ export async function createReply(
   content: string,
   media: File[],
 ): Promise<PostResponse> {
-  const formData =
-    new FormData()
+  const formData = new FormData()
 
-  const normalizedContent =
-    content.trim()
+  const normalizedContent = content.trim()
 
   if (normalizedContent) {
-    formData.append(
-      'content',
-      normalizedContent,
-    )
+    formData.append('content', normalizedContent)
   }
 
   media.forEach((file) => {
-    formData.append(
-      'media[]',
-      file,
-    )
+    formData.append('media[]', file)
   })
 
-  const response =
-    await api.post<PostResponse>(
-      `/posts/${parentPostId}/replies`,
-      formData,
-    )
+  const response = await api.post<PostResponse>(`/posts/${parentPostId}/replies`, formData)
 
   return response.data
 }
 
-export async function getThread(
-  postId: number,
-): Promise<ThreadResponse> {
-  const response =
-    await api.get<ThreadResponse>(
-      `/posts/${postId}/thread`,
-    )
+export async function getThread(postId: number): Promise<ThreadResponse> {
+  const response = await api.get<ThreadResponse>(`/posts/${postId}/thread`)
 
   return response.data
 }
 
-export async function likePost(
-  postId: number,
-): Promise<LikeResponse> {
-  const response =
-    await api.post<LikeResponse>(
-      `/posts/${postId}/like`
-    )
+export async function likePost(postId: number): Promise<LikeResponse> {
+  const response = await api.post<LikeResponse>(`/posts/${postId}/like`)
 
   return response.data
 }
 
-export async function unlikePost(
-  postId: number,
-): Promise<LikeResponse> {
-  const response =
-    await api.delete<LikeResponse>(
-      `/posts/${postId}/like`
-    )
+export async function unlikePost(postId: number): Promise<LikeResponse> {
+  const response = await api.delete<LikeResponse>(`/posts/${postId}/like`)
 
   return response.data
 }
 
-export async function repostPost(
-  postId: number,
-): Promise<RepostResponse> {
-  const response =
-    await api.post<RepostResponse>(
-      `/posts/${postId}/repost`,
-    )
+export async function repostPost(postId: number): Promise<RepostResponse> {
+  const response = await api.post<RepostResponse>(`/posts/${postId}/repost`)
 
   return response.data
 }
 
-export async function unrepostPost(
-  postId: number,
-): Promise<RepostResponse> {
-  const response =
-    await api.delete<RepostResponse>(
-      `/posts/${postId}/repost`,
-    )
+export async function unrepostPost(postId: number): Promise<RepostResponse> {
+  const response = await api.delete<RepostResponse>(`/posts/${postId}/repost`)
 
   return response.data
 }
 
-export async function bookmarkPost(
-  postId: number,
-): Promise<BookmarkResponse> {
-  const response =
-    await api.post<BookmarkResponse>(
-      `/posts/${postId}/bookmark`,
-    )
+export async function bookmarkPost(postId: number): Promise<BookmarkResponse> {
+  const response = await api.post<BookmarkResponse>(`/posts/${postId}/bookmark`)
 
   return response.data
 }
 
-export async function unbookmarkPost(
-  postId: number,
-): Promise<BookmarkResponse> {
-  const response =
-    await api.delete<BookmarkResponse>(
-      `/posts/${postId}/bookmark`,
-    )
+export async function unbookmarkPost(postId: number): Promise<BookmarkResponse> {
+  const response = await api.delete<BookmarkResponse>(`/posts/${postId}/bookmark`)
 
   return response.data
 }
@@ -208,33 +122,21 @@ export async function unbookmarkPost(
 export async function getFollowingFeed(
   cursor: string | null = null,
 ): Promise<FollowingFeedResponse> {
-  const response =
-    await api.get<FollowingFeedResponse>(
-      '/feed/following',
-      {
-        params:
-          cursor ? { cursor } : {},
-      },
-    )
+  const response = await api.get<FollowingFeedResponse>('/feed/following', {
+    params: cursor ? { cursor } : {},
+  })
 
   return response.data
 }
 
-export async function getForYouFeed(
-  cursor: string | null = null,
-): Promise<FollowingFeedResponse> {
-  const response =
-    await api.get<FollowingFeedResponse>(
-      '/feed/for-you',
-      {
-        params:
-          cursor
-            ? {
-                cursor,
-              }
-            : {},
-      },
-    )
+export async function getForYouFeed(cursor: string | null = null): Promise<FollowingFeedResponse> {
+  const response = await api.get<FollowingFeedResponse>('/feed/for-you', {
+    params: cursor
+      ? {
+          cursor,
+        }
+      : {},
+  })
 
   return response.data
 }
@@ -243,18 +145,16 @@ export async function getHashtagPosts(
   hashtag: string,
   cursor: string | null = null,
 ): Promise<HashtagPostsResponse> {
-  const response =
-    await api.get<HashtagPostsResponse>(
-      `/hashtags/${encodeURIComponent(hashtag)}/posts`,
-      {
-        params:
-          cursor
-            ? {
-                cursor,
-              }
-            : {},
-      },
-    )
+  const response = await api.get<HashtagPostsResponse>(
+    `/hashtags/${encodeURIComponent(hashtag)}/posts`,
+    {
+      params: cursor
+        ? {
+            cursor,
+          }
+        : {},
+    },
+  )
 
   return response.data
 }
