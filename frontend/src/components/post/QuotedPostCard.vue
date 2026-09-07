@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import AppAvatar from '@/components/ui/AppAvatar.vue'
+import PostContent from '@/components/post/PostContent.vue'
 import PostMediaGrid from '@/components/post/PostMediaGrid.vue'
 
 import type {
@@ -71,7 +72,9 @@ const profilePath =
         v-if="post.content"
         class="quoted-post-card__content"
       >
-        {{ post.content }}
+        <PostContent
+          :content="post.content"
+        />
       </p>
 
       <PostMediaGrid

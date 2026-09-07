@@ -1,0 +1,14 @@
+.post-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+
+  &__link {
+    color: inherit;
+    font-weight: 500;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

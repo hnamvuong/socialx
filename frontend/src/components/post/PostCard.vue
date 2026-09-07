@@ -11,6 +11,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppDropdown from '@/components/ui/AppDropdown.vue'
 import EditPostModal from '@/components/post/EditPostModal.vue'
 import PostActions from '@/components/post/PostActions.vue'
+import PostContent from '@/components/post/PostContent.vue'
 import PostMediaGrid from '@/components/post/PostMediaGrid.vue'
 import QuotedPostCard from '@/components/post/QuotedPostCard.vue'
 import QuotePostModal from '@/components/post/QuotePostModal.vue'
@@ -652,7 +653,9 @@ async function handleBookmark(): Promise<void> {
           v-if="post.content"
           class="post-card__content"
         >
-          {{ post.content }}
+          <PostContent
+            :content="post.content"
+          />
         </p>
 
         <PostMediaGrid
