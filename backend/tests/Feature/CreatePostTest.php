@@ -328,4 +328,122 @@ class CreatePostTest extends TestCase
             )
             ->assertUnauthorized();
     }
+
+    public function test_creating_post_persists_mentions(): void
+    {
+        $author =
+            User::factory()
+                ->create();
+
+        $role =
+            Role::query()
+                ->where(
+                    'name',
+                    'user'
+                )
+                ->firstOrFail();
+
+        $author
+            ->roles()
+            ->attach(
+                $role
+            );
+
+        $alice =
+            User::factory()
+                ->create([
+                    'username' => 'alice',
+                    'status' => 'active',
+                ]);
+
+        $bob =
+            User::factory()
+                ->create([
+                    'username' => 'bob',
+                    'status' => 'active',
+                ]);
+
+        Sanctum::actingAs(
+            $author
+        );
+
+        $response =
+            $this->postJson(
+                '/api/posts',
+                [
+                    'content' => 'Hello @alice và @bob',
+                ]
+            );
+
+        $response->assertCreated();
+
+        $post =
+            Post::query()
+                ->latest('id')
+                ->firstOrFail();
+
+        $this->assertDatabaseHas(
+            'mentions',
+            [
+                'post_id' => $post->id,
+
+                'mentioned_user_id' => $alice->id,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'mentions',
+            [
+                'post_id' => $post->id,
+
+                'mentioned_user_id' => $bob->id,
+            ]
+        );
+    }
+
+    public function test_creating_post_ignores_unknown_mentions(): void
+    {
+        $author =
+            User::factory()
+                ->create();
+
+        $role =
+            Role::query()
+                ->where(
+                    'name',
+                    'user'
+                )
+                ->firstOrFail();
+
+        $author
+            ->roles()
+            ->attach(
+                $role
+            );
+
+        Sanctum::actingAs(
+            $author
+        );
+
+        $this
+            ->postJson(
+                '/api/posts',
+                [
+                    'content' => 'Hello @does_not_exist',
+                ]
+            )
+            ->assertCreated();
+
+        $post =
+            Post::query()
+                ->latest('id')
+                ->firstOrFail();
+
+        $this->assertSame(
+            0,
+            $post
+                ->mentions()
+                ->count()
+        );
+    }
 }

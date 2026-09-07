@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Post;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class ReplyDatabaseTest extends TestCase
@@ -251,6 +253,68 @@ class ReplyDatabaseTest extends TestCase
 
         $this->assertTrue(
             $root->user->is($alice)
+        );
+    }
+
+    private function actingAsUser(): User
+    {
+        $this->seed();
+
+        $user = User::factory()->create();
+
+        $role = Role::query()
+            ->where('name', 'user')
+            ->firstOrFail();
+
+        $user->roles()->attach($role);
+
+        Sanctum::actingAs($user);
+
+        return $user;
+    }
+
+    public function test_reply_persists_mentions(): void
+    {
+        $author = $this->actingAsUser();
+
+        $alice =
+            User::factory()
+                ->create([
+                    'username' => 'alice',
+                    'status' => 'active',
+                ]);
+
+        $parent =
+            Post::factory()
+                ->for($author)
+                ->create();
+
+        $response =
+            $this->postJson(
+                "/api/posts/{$parent->id}/replies",
+                [
+                    'content' => 'Reply cho @alice',
+                ]
+            );
+
+        $response->assertCreated();
+
+        $reply =
+            Post::query()
+                ->where(
+                    'parent_post_id',
+                    $parent->id
+                )
+                ->latest('id')
+                ->firstOrFail();
+
+        $this->assertDatabaseHas(
+            'mentions',
+            [
+                'post_id' => $reply->id,
+
+                'mentioned_user_id' => $alice->id,
+            ]
         );
     }
 }

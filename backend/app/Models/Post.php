@@ -122,4 +122,23 @@ class Post extends Model
             )
             ->withTimestamps();
     }
+
+    public function mentions(): HasMany
+    {
+        return $this->hasMany(
+            Mention::class
+        );
+    }
+
+    public function mentionedUsers(): BelongsToMany
+    {
+        return $this
+            ->belongsToMany(
+                User::class,
+                'mentions',
+                'post_id',
+                'mentioned_user_id'
+            )
+            ->withTimestamps();
+    }
 }

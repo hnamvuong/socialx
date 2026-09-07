@@ -10,7 +10,9 @@ use App\Models\Hashtag;
 use App\Models\Like;
 use App\Models\Post;
 use App\Models\Repost;
+use App\Models\User;
 use App\Services\HashtagParser;
+use App\Services\MentionParser;
 use App\Services\PostResponseService;
 use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +26,8 @@ class PostController extends Controller
     public function __construct(
         private readonly StorageService $storage,
         private readonly PostResponseService $postResponse,
-        private readonly HashtagParser $hashtagParser
+        private readonly HashtagParser $hashtagParser,
+        private readonly MentionParser $mentionParser
     ) {}
 
     private function syncHashtags(
@@ -73,6 +76,46 @@ class PostController extends Controller
             ->hashtags()
             ->sync(
                 $hashtagIds
+            );
+    }
+
+    private function syncMentions(
+        Post $post,
+        ?string $content
+    ): void {
+        $usernames =
+            $this->mentionParser->parse(
+                $content ?? ''
+            );
+
+        if ($usernames === []) {
+            $post
+                ->mentionedUsers()
+                ->sync([]);
+
+            return;
+        }
+
+        $mentionedUserIds =
+            User::query()
+                ->whereIn(
+                    'username',
+                    $usernames
+                )
+                ->where(
+                    'status',
+                    'active'
+                )
+                ->pluck('id')
+                ->map(
+                    fn ($id): int => (int) $id
+                )
+                ->all();
+
+        $post
+            ->mentionedUsers()
+            ->sync(
+                $mentionedUserIds
             );
     }
 
@@ -129,6 +172,13 @@ class PostController extends Controller
                         ]);
 
                     $this->syncHashtags(
+                        $post,
+                        $validated[
+                            'content'
+                        ] ?? null
+                    );
+
+                    $this->syncMentions(
                         $post,
                         $validated[
                             'content'
@@ -249,6 +299,11 @@ class PostController extends Controller
         $post->save();
 
         $this->syncHashtags(
+            $post,
+            $post->content
+        );
+
+        $this->syncMentions(
             $post,
             $post->content
         );
@@ -440,6 +495,13 @@ class PostController extends Controller
                             ]);
 
                     $this->syncHashtags(
+                        $reply,
+                        $validated[
+                            'content'
+                        ] ?? null
+                    );
+
+                    $this->syncMentions(
                         $reply,
                         $validated[
                             'content'

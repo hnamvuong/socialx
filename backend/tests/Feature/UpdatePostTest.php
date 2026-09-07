@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Post;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -187,5 +188,86 @@ class UpdatePostTest extends TestCase
                 'data.post.content',
                 null
             );
+    }
+
+    private function actingAsUser(): User
+    {
+        $this->seed();
+
+        $user = User::factory()->create();
+
+        $role = Role::query()
+            ->where('name', 'user')
+            ->firstOrFail();
+
+        $user->roles()->attach($role);
+
+        Sanctum::actingAs($user);
+
+        return $user;
+    }
+
+    public function test_updating_post_syncs_mentions(): void
+    {
+
+        $author = $this->actingAsUser();
+
+        $alice =
+            User::factory()
+                ->create([
+                    'username' => 'alice',
+                    'status' => 'active',
+                ]);
+
+        $bob =
+            User::factory()
+                ->create([
+                    'username' => 'bob',
+                    'status' => 'active',
+                ]);
+
+        $post =
+            Post::factory()
+                ->for($author)
+                ->create([
+                    'content' => 'Hello @alice',
+                ]);
+
+        $post
+            ->mentionedUsers()
+            ->attach(
+                $alice->id
+            );
+
+        /*
+         * Dùng PUT/PATCH theo đúng route update
+         * hiện tại của project.
+         */
+        $this
+            ->patchJson(
+                "/api/posts/{$post->id}",
+                [
+                    'content' => 'Hello @bob',
+                ]
+            )
+            ->assertOk();
+
+        $this->assertDatabaseMissing(
+            'mentions',
+            [
+                'post_id' => $post->id,
+
+                'mentioned_user_id' => $alice->id,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'mentions',
+            [
+                'post_id' => $post->id,
+
+                'mentioned_user_id' => $bob->id,
+            ]
+        );
     }
 }

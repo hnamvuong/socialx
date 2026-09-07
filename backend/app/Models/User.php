@@ -215,4 +215,24 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'target_id'
         );
     }
+
+    public function mentionsReceived(): HasMany
+    {
+        return $this->hasMany(
+            Mention::class,
+            'mentioned_user_id'
+        );
+    }
+
+    public function mentionedInPosts(): BelongsToMany
+    {
+        return $this
+            ->belongsToMany(
+                Post::class,
+                'mentions',
+                'mentioned_user_id',
+                'post_id'
+            )
+            ->withTimestamps();
+    }
 }
