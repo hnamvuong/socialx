@@ -10,6 +10,7 @@ use App\Http\Controllers\HashtagController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileMediaController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\UserProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -95,6 +96,21 @@ Route::get('/posts/{post}/thread', [
 Route::get('/hashtags/{hashtag}/posts', [
     HashtagController::class,
     'posts',
+]);
+
+Route::get('/search/users', [
+    SearchController::class,
+    'users',
+]);
+
+Route::get('/search/posts', [
+    SearchController::class,
+    'posts',
+]);
+
+Route::get('/search/hashtags', [
+    SearchController::class,
+    'hashtags',
 ]);
 
 Route::middleware('auth:sanctum')->group(function () {

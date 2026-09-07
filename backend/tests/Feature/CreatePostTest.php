@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Post;
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +15,15 @@ use Tests\TestCase;
 class CreatePostTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(
+            RolePermissionSeeder::class
+        );
+    }
 
     private function actingAsUser(): User
     {
