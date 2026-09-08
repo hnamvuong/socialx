@@ -2,11 +2,16 @@
 
 namespace App\Models;
 
+use App\Events\NotificationCreated;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Notification extends Model
 {
+    protected $dispatchesEvents = [
+        'created' => NotificationCreated::class,
+    ];
+
     public const TYPE_LIKE =
         'like';
 

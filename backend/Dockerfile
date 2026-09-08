@@ -17,6 +17,7 @@ RUN apt-get update \
         --with-jpeg \
     && docker-php-ext-install \
         pdo_mysql \
+        pcntl \
         zip \
         intl \
         gd \

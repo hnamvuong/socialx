@@ -6,6 +6,7 @@ SocialX là ứng dụng mạng xã hội gồm:
 - **Frontend:** Vue 3, TypeScript, Vite
 - **Database:** MySQL 8.4
 - **Cache/queue:** Redis 7
+- **Realtime:** Laravel Reverb
 - **Môi trường chạy:** Docker Compose
 
 ## Yêu cầu môi trường
@@ -43,9 +44,13 @@ Cấu hình Docker mặc định:
 ```text
 Backend API: http://localhost:18000
 Frontend:    http://localhost:15173
+Reverb:      ws://localhost:18080
 MySQL:       localhost:13306
 Redis:       localhost:16379
 ```
+
+Khi chạy trong Docker, backend kết nối tới Reverb bằng hostname nội bộ
+`reverb:8080`. Port `18080` chỉ dùng để truy cập Reverb từ bên ngoài Docker.
 
 ### 3. Build và khởi động container
 
@@ -77,6 +82,44 @@ docker compose exec backend php artisan optimize:clear
 ```
 
 `migrate --seed` tạo các bảng database và dữ liệu role/permission mặc định.
+
+Reverb được khởi động tự động cùng Docker Compose. Kiểm tra service:
+
+```bash
+docker compose ps
+docker compose logs -f reverb
+```
+
+Backend sử dụng Reverb thông qua các biến trong `backend/.env`:
+
+```env
+BROADCAST_CONNECTION=reverb
+REVERB_HOST=reverb
+REVERB_PORT=8080
+REVERB_SCHEME=http
+```
+
+Frontend sử dụng các biến trong `frontend/.env`:
+
+```env
+VITE_API_BASE_URL=http://localhost:18000/api
+VITE_REVERB_APP_KEY=socialx-key
+VITE_REVERB_HOST=localhost
+VITE_REVERB_PORT=18080
+VITE_REVERB_SCHEME=http
+```
+
+Backend dùng `reverb:8080` trong Docker network, còn trình duyệt dùng
+`localhost:18080` thông qua port được expose trên máy host. Chỉ đưa app key
+vào frontend; không đưa `REVERB_APP_SECRET` vào `frontend/.env`.
+
+Sau khi thay đổi các biến Reverb, xóa cache cấu hình và khởi động lại
+backend cùng Reverb:
+
+```bash
+docker compose exec backend php artisan optimize:clear
+docker compose restart backend reverb
+```
 
 ## Truy cập ứng dụng
 
@@ -151,6 +194,7 @@ docker compose logs -f backend
 docker compose logs -f frontend
 docker compose logs -f mysql
 docker compose logs -f redis
+docker compose logs -f reverb
 
 # Xóa cache Laravel
 docker compose exec backend php artisan optimize:clear
@@ -229,6 +273,18 @@ docker compose up -d --build frontend
 docker compose up -d --build
 docker compose ps
 ```
+
+### Reverb không khởi động hoặc không kết nối được
+
+Kiểm tra log của Reverb:
+
+```bash
+docker compose logs -f reverb
+```
+
+Trong `backend/.env`, backend phải dùng hostname Docker `reverb` và port
+container `8080`. Không dùng `localhost:18080` cho kết nối từ backend tới
+Reverb.
 
 ## Cấu trúc thư mục
 

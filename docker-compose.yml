@@ -101,6 +101,30 @@ services:
     networks:
       - socialx-network
 
+  reverb:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    container_name: socialx-reverb
+
+    working_dir: /var/www/html
+
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+
+    volumes:
+      - ./backend:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+
+    ports:
+      - "18080:8080"
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    networks:
+      - socialx-network
 volumes:
   mysql-data:
   redis-data:
