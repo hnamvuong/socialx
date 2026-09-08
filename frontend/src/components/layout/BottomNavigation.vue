@@ -16,49 +16,18 @@ const profilePath = computed(() => {
 
 <template>
   <nav class="bottom-navigation">
-    <RouterLink
-      to="/"
-      class="bottom-navigation__item"
-    >
-      Trang chủ
-    </RouterLink>
+    <RouterLink to="/" class="bottom-navigation__item"> Trang chủ </RouterLink>
 
-    <button
-      type="button"
-      class="bottom-navigation__item"
-      disabled
-    >
-      Khám phá
-    </button>
+    <RouterLink to="/explore" class="bottom-navigation__item"> Khám phá </RouterLink>
 
-    <button
-      type="button"
-      class="bottom-navigation__item"
-      disabled
-    >
-      Thông báo
-    </button>
+    <button type="button" class="bottom-navigation__item" disabled>Thông báo</button>
 
-    <RouterLink
-      v-if="profilePath"
-      :to="profilePath"
-      class="bottom-navigation__item"
-    >
+    <RouterLink v-if="profilePath" :to="profilePath" class="bottom-navigation__item">
       Hồ sơ
     </RouterLink>
 
-    <button
-      v-else
-      type="button"
-      class="bottom-navigation__item"
-      disabled
-    >
-      Hồ sơ
-    </button>
+    <button v-else type="button" class="bottom-navigation__item" disabled>Hồ sơ</button>
   </nav>
 </template>
 
-<style
-  lang="scss"
-  src="@/assets/styles/components/layout/BottomNavigation.scss"
-></style>
+<style lang="scss" src="@/assets/styles/components/layout/BottomNavigation.scss"></style>

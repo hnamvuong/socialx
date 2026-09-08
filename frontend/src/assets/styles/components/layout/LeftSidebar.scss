@@ -73,6 +73,74 @@
         background: transparent;
       }
     }
+
+    .main-navigation {
+      &__item {
+        position: relative;
+
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
+
+        &.router-link-exact-active {
+          font-weight: 700;
+
+          background: rgba(127, 127, 127, 0.22);
+
+          &::before {
+            position: absolute;
+
+            top: 50%;
+            left: -10px;
+
+            width: 4px;
+            height: 28px;
+
+            border-radius: 999px;
+
+            background: currentColor;
+
+            content: '';
+
+            transform: translateY(-50%);
+          }
+        }
+
+        &:not(.main-navigation__item--disabled):hover {
+          background: rgba(127, 127, 127, 0.12);
+        }
+      }
+
+      [data-theme='light'] {
+        .main-navigation__item {
+          &.router-link-exact-active {
+            background: rgba(15, 23, 42, 0.1);
+          }
+        }
+      }
+
+      [data-theme='dark'] {
+        .main-navigation__item {
+          &.router-link-exact-active {
+            background: rgba(255, 255, 255, 0.14);
+          }
+        }
+      }
+
+      .main-navigation__item {
+        .main-navigation__icon,
+        .main-navigation__label {
+          opacity: 0.72;
+        }
+
+        &.router-link-exact-active {
+          .main-navigation__icon,
+          .main-navigation__label {
+            opacity: 1;
+          }
+        }
+      }
+    }
   }
 
   &__icon {
