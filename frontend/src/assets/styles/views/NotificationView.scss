@@ -1,5 +1,5 @@
 .notification-page {
-  min-height: 100vh;
+  min-height: 100%;
 
   &__header {
     position: sticky;
@@ -8,13 +8,14 @@
 
     display: flex;
     align-items: center;
+    justify-content: space-between;
 
     min-height: 56px;
     padding: 0 20px;
 
-    border-bottom: 1px solid rgba(127, 127, 127, 0.16);
+    border-bottom: 1px solid var(--color-border);
 
-    background: Canvas;
+    background: var(--color-background);
   }
 
   &__title {
@@ -23,6 +24,33 @@
     font-size: 20px;
     font-weight: 800;
     line-height: 1.2;
+  }
+
+  &__mark-all {
+    border: 0;
+
+    background: transparent;
+    color: var(--color-text-primary);
+
+    cursor: pointer;
+
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+
+    opacity: 0.7;
+
+    transition: opacity 0.15s ease;
+
+    &:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.4;
+    }
   }
 
   &__list {
@@ -62,7 +90,7 @@
 
       line-height: 1.5;
 
-      opacity: 0.6;
+      color: var(--color-text-secondary);
     }
   }
 
@@ -89,7 +117,7 @@
 
     padding: 18px;
 
-    border-top: 1px solid rgba(127, 127, 127, 0.14);
+    border-top: 1px solid var(--color-border);
   }
 
   &__load-error {
@@ -97,9 +125,9 @@
 
     text-align: center;
 
-    font-size: 14px;
+    color: var(--color-text-secondary);
 
-    opacity: 0.7;
+    font-size: 14px;
   }
 }
 
@@ -119,7 +147,7 @@
 
   padding: 16px 20px;
 
-  border-bottom: 1px solid rgba(127, 127, 127, 0.14);
+  border-bottom: 1px solid var(--color-border);
 
   color: inherit;
   text-decoration: none;
@@ -127,7 +155,15 @@
   transition: background 0.15s ease;
 
   &:hover {
-    background: rgba(127, 127, 127, 0.07);
+    background: var(--color-surface-secondary);
+  }
+
+  &--unread {
+    background: rgba(127, 127, 127, 0.08);
+
+    &:hover {
+      background: rgba(127, 127, 127, 0.12);
+    }
   }
 
   &__type {
@@ -164,9 +200,28 @@
   }
 
   &__body {
+    position: relative;
+
     min-width: 0;
 
     padding-top: 1px;
+    padding-right: 18px;
+  }
+
+  &__unread-dot {
+    position: absolute;
+
+    top: 7px;
+    right: 0;
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: var(--color-text-primary);
+
+    opacity: 0.7;
   }
 
   &__message {
@@ -187,10 +242,10 @@
 
     margin: 6px 0 0;
 
+    color: var(--color-text-secondary);
+
     font-size: 14px;
     line-height: 1.4;
-
-    opacity: 0.62;
 
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -201,8 +256,99 @@
 
     margin-top: 6px;
 
-    font-size: 13px;
+    color: var(--color-text-secondary);
 
-    opacity: 0.5;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 767px) {
+  .notification-page {
+    &__header {
+      min-height: 52px;
+
+      padding: 0 14px;
+    }
+
+    &__title {
+      font-size: 19px;
+    }
+
+    &__mark-all {
+      max-width: 150px;
+
+      font-size: 12px;
+      line-height: 1.25;
+
+      text-align: right;
+    }
+
+    &__state,
+    &__empty {
+      min-height: 260px;
+
+      padding: 32px 20px;
+    }
+  }
+
+  .notification-item {
+    grid-template-columns:
+      24px
+      40px
+      minmax(0, 1fr);
+
+    gap: 10px;
+
+    min-height: 80px;
+
+    padding: 14px 12px;
+
+    &__type {
+      width: 24px;
+      height: 24px;
+
+      margin-top: 4px;
+
+      font-size: 16px;
+    }
+
+    &__type--like {
+      font-size: 18px;
+    }
+
+    &__type--follow {
+      font-size: 20px;
+    }
+
+    &__type--reply {
+      font-size: 18px;
+    }
+
+    &__type--mention {
+      font-size: 16px;
+    }
+
+    &__body {
+      padding-right: 14px;
+    }
+
+    &__message {
+      font-size: 14px;
+    }
+
+    &__post {
+      font-size: 13px;
+    }
+
+    &__time {
+      font-size: 12px;
+    }
+
+    &__unread-dot {
+      top: 6px;
+
+      width: 6px;
+      height: 6px;
+    }
   }
 }

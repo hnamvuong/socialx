@@ -113,4 +113,101 @@ class NotificationController extends Controller
             ],
         ]);
     }
+
+    public function unreadCount(
+        Request $request
+    ): JsonResponse {
+        $user =
+            $request->user();
+
+        $count =
+            Notification::query()
+                ->where(
+                    'user_id',
+                    $user->id
+                )
+                ->whereNull(
+                    'read_at'
+                )
+                ->count();
+
+        return response()->json([
+            'data' => [
+                'unread_count' => $count,
+            ],
+        ]);
+    }
+
+    public function markAsRead(
+        Request $request,
+        Notification $notification
+    ): JsonResponse {
+        $user =
+            $request->user();
+
+        abort_unless(
+            $notification->user_id ===
+                $user->id,
+            404
+        );
+
+        if (
+            $notification->read_at ===
+            null
+        ) {
+            $notification->read_at =
+                now();
+
+            $notification->save();
+        }
+
+        $unreadCount =
+            Notification::query()
+                ->where(
+                    'user_id',
+                    $user->id
+                )
+                ->whereNull(
+                    'read_at'
+                )
+                ->count();
+
+        return response()->json([
+            'data' => [
+                'notification' => [
+                    'id' => $notification->id,
+
+                    'read_at' => $notification
+                        ->read_at,
+                ],
+
+                'unread_count' => $unreadCount,
+            ],
+        ]);
+    }
+
+    public function markAllAsRead(
+        Request $request
+    ): JsonResponse {
+        $user =
+            $request->user();
+
+        Notification::query()
+            ->where(
+                'user_id',
+                $user->id
+            )
+            ->whereNull(
+                'read_at'
+            )
+            ->update([
+                'read_at' => now(),
+            ]);
+
+        return response()->json([
+            'data' => [
+                'unread_count' => 0,
+            ],
+        ]);
+    }
 }

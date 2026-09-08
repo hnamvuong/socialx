@@ -234,4 +234,19 @@ Route::middleware('auth:sanctum')->group(function () {
         NotificationController::class,
         'index',
     ]);
+
+    Route::get('/notifications/unread-count', [
+        NotificationController::class,
+        'unreadCount',
+    ]);
+
+    Route::patch('/notifications/read-all', [
+        NotificationController::class,
+        'markAllAsRead',
+    ]);
+
+    Route::patch('/notifications/{notification}/read', [
+        NotificationController::class,
+        'markAsRead',
+    ]);
 });

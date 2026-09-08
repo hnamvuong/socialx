@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
+
 import { RouterLink } from 'vue-router'
+
 import { useAuthStore } from '@/stores/auth'
 
+import { useNotificationStore } from '@/stores/notification'
+
 const authStore = useAuthStore()
+
+const notificationStore = useNotificationStore()
 
 const profilePath = computed(() => {
   if (!authStore.user?.username) {
@@ -11,6 +17,10 @@ const profilePath = computed(() => {
   }
 
   return `/@${authStore.user.username}`
+})
+
+onMounted(() => {
+  void notificationStore.fetchUnreadCount()
 })
 </script>
 
@@ -20,7 +30,18 @@ const profilePath = computed(() => {
 
     <RouterLink to="/explore" class="bottom-navigation__item"> Khám phá </RouterLink>
 
-    <RouterLink to="/notifications" class="bottom-navigation__item"> Thông báo </RouterLink>
+    <RouterLink
+      to="/notifications"
+      class="bottom-navigation__item bottom-navigation__item--notifications"
+    >
+      <span class="bottom-navigation__label"> Thông báo </span>
+
+      <span
+        v-if="notificationStore.unreadCount > 0"
+        class="bottom-navigation__badge"
+        :aria-label="`${notificationStore.unreadCount} thông báo chưa đọc`"
+      />
+    </RouterLink>
 
     <RouterLink v-if="profilePath" :to="profilePath" class="bottom-navigation__item">
       Hồ sơ

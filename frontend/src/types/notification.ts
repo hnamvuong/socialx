@@ -37,3 +37,19 @@ export interface NotificationListResponse {
     pagination: NotificationPagination
   }
 }
+export interface UnreadCountResponse {
+  data: {
+    unread_count: number
+  }
+}
+
+export interface MarkNotificationReadResponse {
+  data: {
+    notification: {
+      id: number
+      read_at: string
+    }
+
+    unread_count: number
+  }
+}

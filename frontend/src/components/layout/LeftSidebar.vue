@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { RouterLink } from 'vue-router'
 
@@ -8,7 +8,11 @@ import PostComposer from '@/components/post/PostComposer.vue'
 
 import { useAuthStore } from '@/stores/auth'
 
+import { useNotificationStore } from '@/stores/notification'
+
 const authStore = useAuthStore()
+
+const notificationStore = useNotificationStore()
 
 const postModalOpen = ref(false)
 
@@ -31,6 +35,10 @@ function closePostModal(): void {
 function handlePostCreated(): void {
   closePostModal()
 }
+
+onMounted(() => {
+  void notificationStore.fetchUnreadCount()
+})
 </script>
 
 <template>
@@ -55,10 +63,21 @@ function handlePostCreated(): void {
           <span class="main-navigation__label"> Khám phá </span>
         </RouterLink>
 
-        <RouterLink to="/notifications" class="main-navigation__item">
+        <RouterLink
+          to="/notifications"
+          class="main-navigation__item main-navigation__item--notifications"
+        >
           <span class="main-navigation__icon"> T </span>
 
           <span class="main-navigation__label"> Thông báo </span>
+
+          <span
+            v-if="notificationStore.unreadCount > 0"
+            class="main-navigation__badge"
+            :aria-label="`${notificationStore.unreadCount} thông báo chưa đọc`"
+          >
+            {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
+          </span>
         </RouterLink>
 
         <span class="main-navigation__item main-navigation__item--disabled">

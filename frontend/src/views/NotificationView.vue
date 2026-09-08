@@ -9,13 +9,19 @@ import MainLayout from '@/layouts/MainLayout.vue'
 
 import { getNotifications } from '@/services/notificationService'
 
+import { useNotificationStore } from '@/stores/notification'
+
 import type { SocialNotification } from '@/types/notification'
+
+const notificationStore = useNotificationStore()
 
 const notifications = ref<SocialNotification[]>([])
 
 const loading = ref(false)
 
 const loadingMore = ref(false)
+
+const markingAll = ref(false)
 
 const errorMessage = ref<string | null>(null)
 
@@ -96,49 +102,6 @@ function formatDate(value: string): string {
   }).format(date)
 }
 
-async function loadNotifications(): Promise<void> {
-  loading.value = true
-  errorMessage.value = null
-
-  try {
-    const response = await getNotifications()
-
-    notifications.value = response.data.notifications
-
-    nextCursor.value = response.data.pagination.next_cursor
-
-    hasMore.value = response.data.pagination.has_more
-  } catch {
-    notifications.value = []
-
-    errorMessage.value = 'Không thể tải thông báo.'
-  } finally {
-    loading.value = false
-  }
-}
-
-async function loadMore(): Promise<void> {
-  if (loadingMore.value || !hasMore.value || !nextCursor.value) {
-    return
-  }
-
-  loadingMore.value = true
-
-  try {
-    const response = await getNotifications(nextCursor.value)
-
-    notifications.value.push(...response.data.notifications)
-
-    nextCursor.value = response.data.pagination.next_cursor
-
-    hasMore.value = response.data.pagination.has_more
-  } catch {
-    errorMessage.value = 'Không thể tải thêm thông báo.'
-  } finally {
-    loadingMore.value = false
-  }
-}
-
 function notificationIcon(notification: SocialNotification): string {
   switch (notification.type) {
     case 'like':
@@ -162,6 +125,94 @@ function notificationIconClass(notification: SocialNotification): string {
   return `notification-item__type--${notification.type}`
 }
 
+async function loadNotifications(): Promise<void> {
+  loading.value = true
+  errorMessage.value = null
+
+  try {
+    const response = await getNotifications()
+
+    notifications.value = response.data.notifications
+
+    nextCursor.value = response.data.pagination.next_cursor
+
+    hasMore.value = response.data.pagination.has_more
+
+    await notificationStore.fetchUnreadCount()
+  } catch {
+    notifications.value = []
+
+    errorMessage.value = 'Không thể tải thông báo.'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadMore(): Promise<void> {
+  if (loadingMore.value || !hasMore.value || !nextCursor.value) {
+    return
+  }
+
+  loadingMore.value = true
+  errorMessage.value = null
+
+  try {
+    const response = await getNotifications(nextCursor.value)
+
+    notifications.value.push(...response.data.notifications)
+
+    nextCursor.value = response.data.pagination.next_cursor
+
+    hasMore.value = response.data.pagination.has_more
+  } catch {
+    errorMessage.value = 'Không thể tải thêm thông báo.'
+  } finally {
+    loadingMore.value = false
+  }
+}
+
+async function handleNotificationClick(notification: SocialNotification): Promise<void> {
+  if (notification.read_at) {
+    return
+  }
+
+  try {
+    const readAt = await notificationStore.markAsRead(notification.id)
+
+    notification.read_at = readAt
+  } catch {
+    /*
+     * Navigation vẫn được phép tiếp tục
+     * nếu mark-read thất bại.
+     */
+  }
+}
+
+async function handleMarkAllAsRead(): Promise<void> {
+  if (markingAll.value || notificationStore.unreadCount === 0) {
+    return
+  }
+
+  markingAll.value = true
+  errorMessage.value = null
+
+  try {
+    await notificationStore.markAllAsRead()
+
+    const readAt = new Date().toISOString()
+
+    notifications.value = notifications.value.map((notification): SocialNotification => ({
+      ...notification,
+
+      read_at: notification.read_at ?? readAt,
+    }))
+  } catch {
+    errorMessage.value = 'Không thể đánh dấu tất cả thông báo đã đọc.'
+  } finally {
+    markingAll.value = false
+  }
+}
+
 onMounted(() => {
   void loadNotifications()
 })
@@ -172,6 +223,16 @@ onMounted(() => {
     <section class="notification-page">
       <header class="notification-page__header">
         <h1 class="notification-page__title">Thông báo</h1>
+
+        <button
+          v-if="notificationStore.unreadCount > 0"
+          type="button"
+          class="notification-page__mark-all"
+          :disabled="markingAll"
+          @click="handleMarkAllAsRead"
+        >
+          {{ markingAll ? 'Đang xử lý...' : 'Đánh dấu tất cả đã đọc' }}
+        </button>
       </header>
 
       <div v-if="loading" class="notification-page__state">Đang tải thông báo...</div>
@@ -198,6 +259,10 @@ onMounted(() => {
           :key="notification.id"
           :to="notificationTarget(notification)"
           class="notification-item"
+          :class="{
+            'notification-item--unread': !notification.read_at,
+          }"
+          @click="handleNotificationClick(notification)"
         >
           <div class="notification-item__type" :class="notificationIconClass(notification)">
             {{ notificationIcon(notification) }}
@@ -210,6 +275,12 @@ onMounted(() => {
           />
 
           <div class="notification-item__body">
+            <span
+              v-if="!notification.read_at"
+              class="notification-item__unread-dot"
+              aria-label="Chưa đọc"
+            />
+
             <p class="notification-item__message">
               <strong>
                 {{ actorName(notification) }}
@@ -245,4 +316,5 @@ onMounted(() => {
     </section>
   </MainLayout>
 </template>
+
 <style lang="scss" src="@/assets/styles/views/NotificationView.scss"></style>
