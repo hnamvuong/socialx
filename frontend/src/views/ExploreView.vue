@@ -1,13 +1,23 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 
 import { RouterLink, useRouter } from 'vue-router'
 
 import MainLayout from '@/layouts/MainLayout.vue'
 
+import { getTrending } from '@/services/exploreService'
+
+import type { TrendingHashtag } from '@/services/exploreService'
+
 const router = useRouter()
 
 const searchQuery = ref('')
+
+const trends = ref<TrendingHashtag[]>([])
+
+const loadingTrending = ref(false)
+
+const trendingError = ref<string | null>(null)
 
 function submitSearch(): void {
   const query = searchQuery.value.trim()
@@ -24,6 +34,28 @@ function submitSearch(): void {
     },
   })
 }
+
+async function loadTrending(): Promise<void> {
+  loadingTrending.value = true
+
+  trendingError.value = null
+
+  try {
+    const response = await getTrending()
+
+    trends.value = response.data.trends
+  } catch {
+    trends.value = []
+
+    trendingError.value = 'Không thể tải xu hướng.'
+  } finally {
+    loadingTrending.value = false
+  }
+}
+
+onMounted(() => {
+  void loadTrending()
+})
 </script>
 
 <template>
@@ -46,12 +78,7 @@ function submitSearch(): void {
             >
               <circle cx="11" cy="11" r="7" />
 
-              <path
-                d="
-                  m20 20
-                  -3.5 -3.5
-                "
-              />
+              <path d="m20 20-3.5-3.5" />
             </svg>
           </span>
 
@@ -59,9 +86,7 @@ function submitSearch(): void {
             v-model="searchQuery"
             class="explore-view__search-input"
             type="search"
-            placeholder="
-              Tìm kiếm trên SocialX
-            "
+            placeholder="Tìm kiếm trên SocialX"
             autocomplete="off"
           />
         </form>
@@ -73,33 +98,41 @@ function submitSearch(): void {
             <h2 class="explore-view__section-title">Xu hướng dành cho bạn</h2>
 
             <p class="explore-view__section-description">
-              Các chủ đề đang được quan tâm trên SocialX.
+              Các chủ đề đang được quan tâm trong 6 giờ gần đây.
             </p>
           </div>
         </div>
 
-        <div class="explore-view__placeholder">
-          <strong> Trending đang được chuẩn bị </strong>
+        <div v-if="loadingTrending" class="explore-view__placeholder">Đang tải xu hướng...</div>
 
-          <span> Thuật toán xu hướng đang được xây dựng</span>
-        </div>
-      </section>
-
-      <section class="explore-view__section">
-        <div class="explore-view__section-header">
-          <div>
-            <h2 class="explore-view__section-title">Hashtag phổ biến</h2>
-
-            <p class="explore-view__section-description">
-              Khám phá các hashtag đang được sử dụng nhiều.
-            </p>
-          </div>
+        <div v-else-if="trendingError" class="explore-view__placeholder">
+          {{ trendingError }}
         </div>
 
-        <div class="explore-view__placeholder">
-          <strong> Chưa có dữ liệu xu hướng </strong>
+        <div v-else-if="trends.length === 0" class="explore-view__placeholder">
+          <strong> Chưa có xu hướng </strong>
 
-          <span> Danh sách hashtag sẽ được nối với dữ liệu trending ở bài tiếp theo. </span>
+          <span> Các hashtag đang được sử dụng sẽ xuất hiện tại đây. </span>
+        </div>
+
+        <div v-else class="explore-view__trends">
+          <RouterLink
+            v-for="(trend, index) in trends"
+            :key="trend.id"
+            class="explore-view__trend"
+            :to="`/hashtag/${encodeURIComponent(trend.name)}`"
+          >
+            <span class="explore-view__trend-meta"> {{ index + 1 }} · Đang thịnh hành </span>
+
+            <strong class="explore-view__trend-name"> #{{ trend.name }} </strong>
+
+            <span class="explore-view__trend-stats">
+              {{ trend.posts_last_6_hours }}
+              bài viết ·
+              {{ trend.unique_users }}
+              người dùng
+            </span>
+          </RouterLink>
         </div>
       </section>
 

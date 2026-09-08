@@ -134,4 +134,48 @@
       text-decoration: underline;
     }
   }
+  &__trends {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__trend {
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+
+    padding: 14px 16px;
+
+    border-top: 1px solid rgba(127, 127, 127, 0.12);
+
+    color: inherit;
+
+    text-decoration: none;
+
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: rgba(127, 127, 127, 0.06);
+
+      text-decoration: none;
+    }
+  }
+
+  &__trend-meta {
+    font-size: 13px;
+
+    opacity: 0.6;
+  }
+
+  &__trend-name {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  &__trend-stats {
+    font-size: 13px;
+
+    opacity: 0.6;
+  }
 }

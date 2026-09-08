@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\BookmarkController;
+use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\HashtagController;
@@ -111,6 +112,11 @@ Route::get('/search/posts', [
 Route::get('/search/hashtags', [
     SearchController::class,
     'hashtags',
+]);
+
+Route::get('/explore/trending', [
+    ExploreController::class,
+    'trending',
 ]);
 
 Route::middleware('auth:sanctum')->group(function () {
