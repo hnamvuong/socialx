@@ -9,6 +9,7 @@ use App\Http\Requests\UpdatePostRequest;
 use App\Models\Bookmark;
 use App\Models\Hashtag;
 use App\Models\Like;
+use App\Models\Notification;
 use App\Models\Post;
 use App\Models\Repost;
 use App\Models\User;
@@ -560,6 +561,34 @@ class PostController extends Controller
 
                     $reply->save();
 
+                    /*
+                    * Reply Notification
+                    *
+                    * Không gửi notification nếu user
+                    * đang reply chính bài của mình.
+                    */
+                    if (
+                        $post->user_id !==
+                        $user->id
+                    ) {
+                        $notification =
+                            new Notification;
+
+                        $notification->user_id =
+                            $post->user_id;
+
+                        $notification->actor_id =
+                            $user->id;
+
+                        $notification->type =
+                            Notification::TYPE_REPLY;
+
+                        $notification->post_id =
+                            $reply->id;
+
+                        $notification->save();
+                    }
+
                     $files = $request->file(
                         'media',
                         []
@@ -819,10 +848,12 @@ class PostController extends Controller
         Request $request,
         Post $post
     ): JsonResponse {
-        $user = $request->user();
+        $user =
+            $request->user();
 
         abort_if(
-            $post->user->status !== 'active',
+            $post->user->status !==
+                'active',
             404
         );
 
@@ -839,12 +870,73 @@ class PostController extends Controller
                 ->first();
 
         if (! $existingLike) {
-            $like = new Like;
+            DB::transaction(
+                function () use (
+                    $user,
+                    $post
+                ): void {
+                    $like =
+                        new Like;
 
-            $like->user_id = $user->id;
-            $like->post_id = $post->id;
+                    $like->user_id =
+                        $user->id;
 
-            $like->save();
+                    $like->post_id =
+                        $post->id;
+
+                    $like->save();
+
+                    if (
+                        $post->user_id ===
+                        $user->id
+                    ) {
+                        return;
+                    }
+
+                    $existingNotification =
+                        Notification::query()
+                            ->where(
+                                'user_id',
+                                $post->user_id
+                            )
+                            ->where(
+                                'actor_id',
+                                $user->id
+                            )
+                            ->where(
+                                'type',
+                                Notification::TYPE_LIKE
+                            )
+                            ->where(
+                                'post_id',
+                                $post->id
+                            )
+                            ->first();
+
+                    if (
+                        $existingNotification
+                    ) {
+                        return;
+                    }
+
+                    $notification =
+                        new Notification;
+
+                    $notification->user_id =
+                        $post->user_id;
+
+                    $notification->actor_id =
+                        $user->id;
+
+                    $notification->type =
+                        Notification::TYPE_LIKE;
+
+                    $notification->post_id =
+                        $post->id;
+
+                    $notification->save();
+                }
+            );
         }
 
         return response()->json([
@@ -861,23 +953,51 @@ class PostController extends Controller
         Request $request,
         Post $post
     ): JsonResponse {
-        $user = $request->user();
+        $user =
+            $request->user();
 
         abort_if(
-            $post->user->status !== 'active',
+            $post->user->status !==
+                'active',
             404
         );
 
-        Like::query()
-            ->where(
-                'user_id',
-                $user->id
-            )
-            ->where(
-                'post_id',
-                $post->id
-            )
-            ->delete();
+        DB::transaction(
+            function () use (
+                $user,
+                $post
+            ): void {
+                Like::query()
+                    ->where(
+                        'user_id',
+                        $user->id
+                    )
+                    ->where(
+                        'post_id',
+                        $post->id
+                    )
+                    ->delete();
+
+                Notification::query()
+                    ->where(
+                        'user_id',
+                        $post->user_id
+                    )
+                    ->where(
+                        'actor_id',
+                        $user->id
+                    )
+                    ->where(
+                        'type',
+                        Notification::TYPE_LIKE
+                    )
+                    ->where(
+                        'post_id',
+                        $post->id
+                    )
+                    ->delete();
+            }
+        );
 
         return response()->json([
             'data' => [

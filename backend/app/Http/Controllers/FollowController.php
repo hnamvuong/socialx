@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FollowRequest;
+use App\Models\Notification;
 use App\Models\User;
 use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
@@ -125,16 +126,61 @@ class FollowController extends Controller
                     )
                     ->delete();
 
-                DB::table('follows')
-                    ->insertOrIgnore([
-                        'follower_id' => $viewer->id,
+                $followCreated =
+                    DB::table('follows')
+                        ->insertOrIgnore([
+                            'follower_id' => $viewer->id,
 
-                        'following_id' => $user->id,
+                            'following_id' => $user->id,
 
-                        'created_at' => now(),
+                            'created_at' => now(),
 
-                        'updated_at' => now(),
-                    ]);
+                            'updated_at' => now(),
+                        ]);
+
+                if ($followCreated === 0) {
+                    return;
+                }
+
+                $existingNotification =
+                    Notification::query()
+                        ->where(
+                            'user_id',
+                            $user->id
+                        )
+                        ->where(
+                            'actor_id',
+                            $viewer->id
+                        )
+                        ->where(
+                            'type',
+                            Notification::TYPE_FOLLOW
+                        )
+                        ->whereNull(
+                            'post_id'
+                        )
+                        ->first();
+
+                if ($existingNotification) {
+                    return;
+                }
+
+                $notification =
+                    new Notification;
+
+                $notification->user_id =
+                    $user->id;
+
+                $notification->actor_id =
+                    $viewer->id;
+
+                $notification->type =
+                    Notification::TYPE_FOLLOW;
+
+                $notification->post_id =
+                    null;
+
+                $notification->save();
             }
         );
 
@@ -192,6 +238,24 @@ class FollowController extends Controller
                         $user->id
                     )
                     ->delete();
+
+                Notification::query()
+                    ->where(
+                        'user_id',
+                        $user->id
+                    )
+                    ->where(
+                        'actor_id',
+                        $viewer->id
+                    )
+                    ->where(
+                        'type',
+                        Notification::TYPE_FOLLOW
+                    )
+                    ->whereNull(
+                        'post_id'
+                    )
+                    ->delete();
             }
         );
 
@@ -234,18 +298,63 @@ class FollowController extends Controller
             function () use (
                 $followRequest
             ): void {
-                DB::table('follows')
-                    ->insertOrIgnore([
-                        'follower_id' => $followRequest
-                            ->requester_id,
+                $followCreated =
+                    DB::table('follows')
+                        ->insertOrIgnore([
+                            'follower_id' => $followRequest
+                                ->requester_id,
 
-                        'following_id' => $followRequest
-                            ->target_id,
+                            'following_id' => $followRequest
+                                ->target_id,
 
-                        'created_at' => now(),
+                            'created_at' => now(),
 
-                        'updated_at' => now(),
-                    ]);
+                            'updated_at' => now(),
+                        ]);
+
+                if ($followCreated > 0) {
+                    $existingNotification =
+                        Notification::query()
+                            ->where(
+                                'user_id',
+                                $followRequest
+                                    ->target_id
+                            )
+                            ->where(
+                                'actor_id',
+                                $followRequest
+                                    ->requester_id
+                            )
+                            ->where(
+                                'type',
+                                Notification::TYPE_FOLLOW
+                            )
+                            ->whereNull(
+                                'post_id'
+                            )
+                            ->first();
+
+                    if (! $existingNotification) {
+                        $notification =
+                            new Notification;
+
+                        $notification->user_id =
+                            $followRequest
+                                ->target_id;
+
+                        $notification->actor_id =
+                            $followRequest
+                                ->requester_id;
+
+                        $notification->type =
+                            Notification::TYPE_FOLLOW;
+
+                        $notification->post_id =
+                            null;
+
+                        $notification->save();
+                    }
+                }
 
                 DB::table(
                     'follow_requests'

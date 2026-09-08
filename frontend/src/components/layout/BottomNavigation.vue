@@ -20,7 +20,7 @@ const profilePath = computed(() => {
 
     <RouterLink to="/explore" class="bottom-navigation__item"> Khám phá </RouterLink>
 
-    <button type="button" class="bottom-navigation__item" disabled>Thông báo</button>
+    <RouterLink to="/notifications" class="bottom-navigation__item"> Thông báo </RouterLink>
 
     <RouterLink v-if="profilePath" :to="profilePath" class="bottom-navigation__item">
       Hồ sơ

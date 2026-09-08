@@ -8,6 +8,7 @@ use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\HashtagController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileMediaController;
@@ -227,5 +228,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/feed/for-you', [
         FeedController::class,
         'forYou',
+    ]);
+
+    Route::get('/notifications', [
+        NotificationController::class,
+        'index',
     ]);
 });

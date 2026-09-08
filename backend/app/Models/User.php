@@ -235,4 +235,22 @@ class User extends Authenticatable implements MustVerifyEmailContract
             )
             ->withTimestamps();
     }
+
+    public function notifications(): HasMany
+    {
+        return $this
+            ->hasMany(
+                Notification::class,
+                'user_id'
+            );
+    }
+
+    public function notificationsSent(): HasMany
+    {
+        return $this
+            ->hasMany(
+                Notification::class,
+                'actor_id'
+            );
+    }
 }

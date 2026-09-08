@@ -141,4 +141,12 @@ class Post extends Model
             )
             ->withTimestamps();
     }
+
+    public function notifications(): HasMany
+    {
+        return $this
+            ->hasMany(
+                Notification::class
+            );
+    }
 }

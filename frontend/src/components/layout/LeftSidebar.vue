@@ -8,8 +8,6 @@ import PostComposer from '@/components/post/PostComposer.vue'
 
 import { useAuthStore } from '@/stores/auth'
 
-import type { Post } from '@/types/post'
-
 const authStore = useAuthStore()
 
 const postModalOpen = ref(false)
@@ -57,11 +55,11 @@ function handlePostCreated(): void {
           <span class="main-navigation__label"> Khám phá </span>
         </RouterLink>
 
-        <span class="main-navigation__item main-navigation__item--disabled">
+        <RouterLink to="/notifications" class="main-navigation__item">
           <span class="main-navigation__icon"> T </span>
 
           <span class="main-navigation__label"> Thông báo </span>
-        </span>
+        </RouterLink>
 
         <span class="main-navigation__item main-navigation__item--disabled">
           <span class="main-navigation__icon"> M </span>
@@ -70,7 +68,7 @@ function handlePostCreated(): void {
         </span>
 
         <RouterLink to="/bookmarks" class="main-navigation__item">
-          <span class="main-navigation__icon"> ◇ </span>
+          <span class="main-navigation__icon"> D </span>
 
           <span class="main-navigation__label"> Dấu trang </span>
         </RouterLink>
