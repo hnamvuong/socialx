@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+
 import { RouterLink } from 'vue-router'
+
 import AppButton from '@/components/ui/AppButton.vue'
+import PostComposer from '@/components/post/PostComposer.vue'
+
 import { useAuthStore } from '@/stores/auth'
 
+import type { Post } from '@/types/post'
+
 const authStore = useAuthStore()
+
+const postModalOpen = ref(false)
 
 const profilePath = computed(() => {
   if (!authStore.user?.username) {
@@ -13,6 +21,18 @@ const profilePath = computed(() => {
 
   return `/@${authStore.user.username}`
 })
+
+function openPostModal(): void {
+  postModalOpen.value = true
+}
+
+function closePostModal(): void {
+  postModalOpen.value = false
+}
+
+function handlePostCreated(): void {
+  closePostModal()
+}
 </script>
 
 <template>
@@ -60,6 +80,7 @@ const profilePath = computed(() => {
 
           <span class="main-navigation__label"> Hồ sơ </span>
         </RouterLink>
+
         <span v-else class="main-navigation__item main-navigation__item--disabled">
           <span class="main-navigation__icon"> P </span>
 
@@ -67,12 +88,36 @@ const profilePath = computed(() => {
         </span>
       </nav>
 
-      <AppButton class="create-post-button" size="lg" block disabled>
+      <AppButton class="create-post-button" size="lg" block @click="openPostModal">
         <span class="create-post-button__full"> Đăng bài </span>
 
         <span class="create-post-button__compact"> + </span>
       </AppButton>
     </div>
+
+    <Teleport to="body">
+      <div v-if="postModalOpen" class="create-post-modal" @click.self="closePostModal">
+        <div
+          class="create-post-modal__dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Đăng bài"
+        >
+          <div class="create-post-modal__header">
+            <button
+              type="button"
+              class="create-post-modal__close"
+              aria-label="Đóng"
+              @click="closePostModal"
+            >
+              ×
+            </button>
+          </div>
+
+          <PostComposer @created="handlePostCreated" />
+        </div>
+      </div>
+    </Teleport>
   </aside>
 </template>
 
