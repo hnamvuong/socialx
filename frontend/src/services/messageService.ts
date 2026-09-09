@@ -1,6 +1,6 @@
 import api from '@/services/api'
 
-import type { MessageListResponse } from '@/types/message'
+import type { Message, MessageListResponse } from '@/types/message'
 
 export async function getMessages(
   conversationId: number,
@@ -15,4 +15,14 @@ export async function getMessages(
   })
 
   return response.data.data
+}
+
+export async function sendMessage(conversationId: number, formData: FormData): Promise<Message> {
+  const response = await api.post<{
+    data: {
+      message: Message
+    }
+  }>(`/conversations/${conversationId}/messages`, formData)
+
+  return response.data.data.message
 }

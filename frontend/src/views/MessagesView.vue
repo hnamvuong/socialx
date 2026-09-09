@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { useRoute, useRouter } from 'vue-router'
 
@@ -9,14 +9,19 @@ import MainLayout from '@/layouts/MainLayout.vue'
 
 import { getConversations } from '@/services/conversationService'
 
-import { getMessages } from '@/services/messageService'
+import { getMessages, sendMessage } from '@/services/messageService'
+
+import { useAuthStore } from '@/stores/auth'
 
 import type { Conversation } from '@/types/conversation'
 
 import type { Message } from '@/types/message'
 
 const route = useRoute()
+
 const router = useRouter()
+
+const authStore = useAuthStore()
 
 const conversations = ref<Conversation[]>([])
 
@@ -38,6 +43,20 @@ const nextCursor = ref<string | null>(null)
 
 const hasMore = ref(false)
 
+const composerBody = ref('')
+
+const selectedImages = ref<File[]>([])
+
+const imagePreviews = ref<string[]>([])
+
+const sendingMessage = ref(false)
+
+const sendError = ref<string | null>(null)
+
+const fileInput = ref<HTMLInputElement | null>(null)
+
+const messageHistoryElement = ref<HTMLElement | null>(null)
+
 const selectedConversationId = computed((): number | null => {
   const raw = route.query.conversation
 
@@ -51,6 +70,16 @@ const selectedConversationId = computed((): number | null => {
 
   return Number.isInteger(id) && id > 0 ? id : null
 })
+
+const canSend = computed((): boolean => {
+  if (sendingMessage.value) {
+    return false
+  }
+
+  return composerBody.value.trim().length > 0 || selectedImages.value.length > 0
+})
+
+const hasSelectedConversation = computed((): boolean => selectedConversation.value !== null)
 
 function memberName(conversation: Conversation): string {
   const member = conversation.other_member
@@ -110,6 +139,10 @@ async function loadConversations(): Promise<void> {
 }
 
 async function selectConversation(conversation: Conversation): Promise<void> {
+  if (selectedConversation.value?.id !== conversation.id) {
+    resetComposer()
+  }
+
   selectedConversation.value = conversation
 
   await router.replace({
@@ -140,6 +173,8 @@ async function loadMessages(conversationId: number): Promise<void> {
     nextCursor.value = response.pagination.next_cursor
 
     hasMore.value = response.pagination.has_more
+
+    await scrollToBottom()
   } catch {
     messages.value = []
 
@@ -199,14 +234,201 @@ async function initializePage(): Promise<void> {
   await selectConversation(conversation)
 }
 
+function isMyMessage(message: Message): boolean {
+  return authStore.user?.id === message.sender.id
+}
+
+function openImagePicker(): void {
+  fileInput.value?.click()
+}
+
+function revokeImagePreviews(): void {
+  for (const preview of imagePreviews.value) {
+    URL.revokeObjectURL(preview)
+  }
+
+  imagePreviews.value = []
+}
+
+function handleImageSelection(event: Event): void {
+  const input = event.target as HTMLInputElement
+
+  const files = Array.from(input.files ?? [])
+
+  if (files.length === 0) {
+    return
+  }
+
+  const availableSlots = 4 - selectedImages.value.length
+
+  const acceptedFiles = files
+    .filter((file) => file.type.startsWith('image/'))
+    .slice(0, availableSlots)
+
+  for (const file of acceptedFiles) {
+    selectedImages.value.push(file)
+
+    imagePreviews.value.push(URL.createObjectURL(file))
+  }
+
+  /*
+   * Cho phép chọn lại chính file
+   * vừa chọn sau khi remove.
+   */
+  input.value = ''
+}
+
+function removeSelectedImage(index: number): void {
+  const preview = imagePreviews.value[index]
+
+  if (preview) {
+    URL.revokeObjectURL(preview)
+  }
+
+  selectedImages.value.splice(index, 1)
+
+  imagePreviews.value.splice(index, 1)
+}
+
+function resetComposer(): void {
+  composerBody.value = ''
+
+  revokeImagePreviews()
+
+  selectedImages.value = []
+
+  sendError.value = null
+
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+async function scrollToBottom(): Promise<void> {
+  await nextTick()
+
+  requestAnimationFrame(() => {
+    const element = messageHistoryElement.value
+
+    if (!element) {
+      return
+    }
+
+    element.scrollTop = element.scrollHeight
+  })
+}
+
+async function handleSendMessage(): Promise<void> {
+  const conversation = selectedConversation.value
+
+  if (!conversation || !canSend.value) {
+    return
+  }
+
+  sendingMessage.value = true
+
+  sendError.value = null
+
+  try {
+    const formData = new FormData()
+
+    const body = composerBody.value.trim()
+
+    if (body) {
+      formData.append('body', body)
+    }
+
+    for (const image of selectedImages.value) {
+      formData.append('attachments[]', image)
+    }
+
+    const message = await sendMessage(conversation.id, formData)
+
+    messages.value.push(message)
+
+    updateConversationAfterSend(conversation, message)
+
+    resetComposer()
+
+    await scrollToBottom()
+  } catch {
+    sendError.value = 'Không thể gửi tin nhắn.'
+  } finally {
+    sendingMessage.value = false
+  }
+}
+
+function updateConversationAfterSend(conversation: Conversation, message: Message): void {
+  conversation.last_message = {
+    id: message.id,
+
+    body: message.body,
+
+    sender_id: message.sender.id,
+
+    has_attachments: message.attachments.length > 0,
+
+    created_at: message.created_at,
+  }
+
+  conversation.updated_at = message.created_at
+
+  const index = conversations.value.findIndex((item) => item.id === conversation.id)
+
+  if (index <= 0) {
+    return
+  }
+
+  const [activeConversation] = conversations.value.splice(index, 1)
+
+  if (activeConversation) {
+    conversations.value.unshift(activeConversation)
+  }
+}
+
+function handleComposerKeydown(event: KeyboardEvent): void {
+  if (event.key !== 'Enter' || event.shiftKey) {
+    return
+  }
+
+  event.preventDefault()
+
+  void handleSendMessage()
+}
+
+async function closeConversation(): Promise<void> {
+  selectedConversation.value = null
+
+  messages.value = []
+
+  nextCursor.value = null
+
+  hasMore.value = false
+
+  resetComposer()
+
+  await router.replace({
+    path: '/messages',
+  })
+}
+
 onMounted(() => {
   void initializePage()
+})
+
+onBeforeUnmount(() => {
+  revokeImagePreviews()
 })
 </script>
 
 <template>
-  <MainLayout>
-    <section class="messages-page">
+  <MainLayout :hide-right-sidebar="true">
+    <section
+      class="messages-page"
+      :class="{
+        'messages-page--conversation-open': hasSelectedConversation,
+      }"
+    >
       <aside class="messages-page__conversations">
         <header class="messages-page__header">
           <h1>Tin nhắn</h1>
@@ -263,6 +485,17 @@ onMounted(() => {
       <section class="messages-page__conversation">
         <template v-if="selectedConversation">
           <header class="chat-header">
+            <button
+              type="button"
+              class="chat-header__back"
+              aria-label="
+                Quay lại danh sách tin nhắn
+              "
+              @click="closeConversation"
+            >
+              ←
+            </button>
+
             <AppAvatar
               :src="selectedConversation.other_member?.avatar_url ?? null"
               :name="memberName(selectedConversation)"
@@ -276,7 +509,13 @@ onMounted(() => {
 
           <div v-if="loadingMessages" class="messages-page__state">Đang tải tin nhắn...</div>
 
-          <div v-else class="message-history">
+          <div
+            v-else
+            ref="
+              messageHistoryElement
+            "
+            class="message-history"
+          >
             <button
               v-if="hasMore"
               type="button"
@@ -293,38 +532,122 @@ onMounted(() => {
 
             <div v-if="messages.length === 0" class="messages-page__state">Chưa có tin nhắn.</div>
 
-            <article v-for="message in messages" :key="message.id" class="message-row">
-              <AppAvatar
-                :src="message.sender.avatar_url"
-                :name="message.sender.display_name ?? message.sender.username"
-                :size="32"
+            <div v-else class="message-history__messages">
+              <article
+                v-for="message in messages"
+                :key="message.id"
+                class="message-row"
+                :class="{
+                  'message-row--mine': isMyMessage(message),
+
+                  'message-row--theirs': !isMyMessage(message),
+                }"
+              >
+                <AppAvatar
+                  v-if="!isMyMessage(message)"
+                  :src="message.sender.avatar_url"
+                  :name="message.sender.display_name ?? message.sender.username"
+                  :size="32"
+                  class="message-row__avatar"
+                />
+
+                <div class="message-row__content">
+                  <span v-if="!isMyMessage(message)" class="message-row__sender">
+                    {{ message.sender.display_name ?? message.sender.username }}
+                  </span>
+
+                  <div class="message-bubble">
+                    <p v-if="message.body" class="message-bubble__text">
+                      {{ message.body }}
+                    </p>
+
+                    <div v-if="message.attachments.length > 0" class="message-bubble__attachments">
+                      <img
+                        v-for="attachment in message.attachments"
+                        :key="attachment.id"
+                        :src="attachment.url"
+                        alt=""
+                        class="message-bubble__image"
+                        @load="scrollToBottom"
+                      />
+                    </div>
+                  </div>
+
+                  <time class="message-row__time" :datetime="message.created_at">
+                    {{ formatTime(message.created_at) }}
+                  </time>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <form class="chat-composer" @submit.prevent="handleSendMessage">
+            <div v-if="imagePreviews.length > 0" class="chat-composer__previews">
+              <div
+                v-for="(preview, index) in imagePreviews"
+                :key="preview"
+                class="chat-composer__preview"
+              >
+                <img :src="preview" alt="" />
+
+                <button
+                  type="button"
+                  class="chat-composer__remove-image"
+                  aria-label="
+                    Xóa ảnh
+                  "
+                  @click="removeSelectedImage(index)"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div v-if="sendError" class="chat-composer__error">
+              {{ sendError }}
+            </div>
+
+            <div class="chat-composer__controls">
+              <input
+                ref="fileInput"
+                type="file"
+                accept="
+                  image/jpeg,
+                  image/png,
+                  image/webp
+                "
+                multiple
+                class="chat-composer__file-input"
+                @change="handleImageSelection"
               />
 
-              <div class="message-row__body">
-                <strong>
-                  {{ message.sender.display_name ?? message.sender.username }}
-                </strong>
+              <button
+                type="button"
+                class="chat-composer__media-button"
+                :disabled="selectedImages.length >= 4 || sendingMessage"
+                aria-label="
+                  Thêm ảnh
+                "
+                @click="openImagePicker"
+              >
+                +
+              </button>
 
-                <p v-if="message.body">
-                  {{ message.body }}
-                </p>
+              <textarea
+                v-model="composerBody"
+                class="chat-composer__textarea"
+                maxlength="5000"
+                rows="1"
+                placeholder="Nhập tin nhắn..."
+                :disabled="sendingMessage"
+                @keydown="handleComposerKeydown"
+              />
 
-                <div v-if="message.attachments.length > 0" class="message-row__attachments">
-                  <img
-                    v-for="attachment in message.attachments"
-                    :key="attachment.id"
-                    :src="attachment.url"
-                    alt=""
-                    class="message-row__image"
-                  />
-                </div>
-
-                <time :datetime="message.created_at">
-                  {{ formatTime(message.created_at) }}
-                </time>
-              </div>
-            </article>
-          </div>
+              <button type="submit" class="chat-composer__send" :disabled="!canSend">
+                {{ sendingMessage ? 'Đang gửi...' : 'Gửi' }}
+              </button>
+            </div>
+          </form>
         </template>
 
         <div v-else class="messages-page__empty-chat">Chọn một cuộc trò chuyện.</div>
