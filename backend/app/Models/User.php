@@ -253,4 +253,32 @@ class User extends Authenticatable implements MustVerifyEmailContract
                 'actor_id'
             );
     }
+
+    public function conversations(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Conversation::class,
+            'conversation_members'
+        )
+            ->withPivot([
+                'role',
+                'joined_at',
+            ])
+            ->withTimestamps();
+    }
+
+    public function conversationMemberships(): HasMany
+    {
+        return $this->hasMany(
+            ConversationMember::class
+        );
+    }
+
+    public function sentMessages(): HasMany
+    {
+        return $this->hasMany(
+            Message::class,
+            'sender_id'
+        );
+    }
 }

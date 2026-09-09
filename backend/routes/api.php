@@ -4,10 +4,12 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\BookmarkController;
+use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\HashtagController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
@@ -248,5 +250,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/notifications/{notification}/read', [
         NotificationController::class,
         'markAsRead',
+    ]);
+
+    Route::get('/conversations', [
+        ConversationController::class,
+        'index',
+    ]);
+
+    Route::post('/conversations/direct', [
+        ConversationController::class,
+        'storeDirect',
+    ]);
+
+    Route::get('/conversations/{conversation}', [
+        ConversationController::class,
+        'show',
+    ]);
+
+    Route::post('/conversations/{conversation}/messages', [
+        MessageController::class,
+        'store',
     ]);
 });
