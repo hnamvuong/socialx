@@ -267,6 +267,11 @@ Route::middleware('auth:sanctum')->group(function () {
         'show',
     ]);
 
+    Route::get('/conversations/{conversation}/messages', [
+        MessageController::class,
+        'index',
+    ]);
+
     Route::post('/conversations/{conversation}/messages', [
         MessageController::class,
         'store',

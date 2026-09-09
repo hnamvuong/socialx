@@ -346,4 +346,94 @@ class SendMessageApiTest extends TestCase
             ]
         );
     }
+
+    public function test_member_can_get_message_history(): void
+    {
+        $alice =
+            User::factory()->create();
+
+        $bob =
+            User::factory()->create();
+
+        $conversation =
+            $this->createDirectConversation(
+                $alice,
+                $bob
+            );
+
+        $conversation
+            ->messages()
+            ->create([
+                'sender_id' => $alice->id,
+
+                'body' => 'Tin nhắn thứ nhất',
+            ]);
+
+        $conversation
+            ->messages()
+            ->create([
+                'sender_id' => $bob->id,
+
+                'body' => 'Tin nhắn thứ hai',
+            ]);
+
+        Sanctum::actingAs(
+            $alice
+        );
+
+        $response =
+            $this->getJson(
+                "/api/conversations/{$conversation->id}/messages"
+            );
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(
+                2,
+                'data.messages'
+            )
+            ->assertJsonPath(
+                'data.messages.0.body',
+                'Tin nhắn thứ hai'
+            )
+            ->assertJsonPath(
+                'data.messages.1.body',
+                'Tin nhắn thứ nhất'
+            );
+    }
+
+    public function test_non_member_cannot_get_message_history(): void
+    {
+        $alice =
+            User::factory()->create();
+
+        $bob =
+            User::factory()->create();
+
+        $intruder =
+            User::factory()->create();
+
+        $conversation =
+            $this->createDirectConversation(
+                $alice,
+                $bob
+            );
+
+        $conversation
+            ->messages()
+            ->create([
+                'sender_id' => $alice->id,
+
+                'body' => 'Private message',
+            ]);
+
+        Sanctum::actingAs(
+            $intruder
+        );
+
+        $this->getJson(
+            "/api/conversations/{$conversation->id}/messages"
+        )
+            ->assertNotFound();
+    }
 }

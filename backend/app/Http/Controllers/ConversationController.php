@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CreateDirectConversationRequest;
 use App\Models\Conversation;
 use App\Models\ConversationMember;
+use App\Models\Message;
 use App\Models\User;
 use App\Services\StorageService;
 use Illuminate\Database\QueryException;
@@ -177,6 +178,8 @@ class ConversationController extends Controller
                 )
                 ->with([
                     'members',
+                    'latestMessage.sender',
+                    'latestMessage.attachments',
                 ])
                 ->orderByDesc(
                     'updated_at'
@@ -240,6 +243,8 @@ class ConversationController extends Controller
     ): array {
         $conversation->loadMissing([
             'members',
+            'latestMessage.sender',
+            'latestMessage.attachments',
         ]);
 
         $members =
@@ -309,6 +314,11 @@ class ConversationController extends Controller
             'members' => $members,
 
             'other_member' => $otherMember,
+            'last_message' => $conversation->latestMessage
+                ? $this->lastMessageData(
+                    $conversation->latestMessage
+                )
+                : null,
 
             'created_at' => $conversation->created_at,
 
@@ -335,5 +345,23 @@ class ConversationController extends Controller
         return $lower
             .':'
             .$higher;
+    }
+
+    private function lastMessageData(
+        Message $message
+    ): array {
+        return [
+            'id' => $message->id,
+
+            'body' => $message->body,
+
+            'sender_id' => $message->sender_id,
+
+            'has_attachments' => $message
+                ->attachments
+                ->isNotEmpty(),
+
+            'created_at' => $message->created_at,
+        ];
     }
 }

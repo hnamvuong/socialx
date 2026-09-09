@@ -65,6 +65,8 @@ onMounted(() => {
       />
     </RouterLink>
 
+    <RouterLink to="/messages" class="bottom-navigation__item"> Tin nhắn </RouterLink>
+
     <RouterLink v-if="profilePath" :to="profilePath" class="bottom-navigation__item">
       Hồ sơ
     </RouterLink>

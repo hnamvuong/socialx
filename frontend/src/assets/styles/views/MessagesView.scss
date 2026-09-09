@@ -1,0 +1,209 @@
+@use '@/assets/styles/mixins' as *;
+
+.messages-page {
+  display: grid;
+  grid-template-columns:
+    minmax(240px, 320px)
+    minmax(0, 1fr);
+
+  min-height: 100vh;
+
+  &__conversations {
+    border-right: 1px solid var(--color-border);
+  }
+
+  &__conversation {
+    min-width: 0;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+
+    min-height: 64px;
+
+    padding: 0 16px;
+
+    border-bottom: 1px solid var(--color-border);
+
+    h1 {
+      margin: 0;
+
+      font-size: 20px;
+    }
+  }
+
+  &__state,
+  &__error,
+  &__empty-chat {
+    padding: 24px 16px;
+
+    color: var(--color-text-secondary);
+
+    text-align: center;
+  }
+
+  &__empty-chat {
+    display: flex;
+    min-height: 420px;
+
+    align-items: center;
+    justify-content: center;
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+
+    &__conversation {
+      border-top: 1px solid var(--color-border);
+    }
+  }
+}
+
+.conversation-item {
+  display: grid;
+
+  grid-template-columns:
+    auto
+    minmax(0, 1fr)
+    auto;
+
+  width: 100%;
+
+  gap: 12px;
+
+  align-items: center;
+
+  padding: 12px 16px;
+
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+
+  background: transparent;
+
+  color: inherit;
+
+  cursor: pointer;
+
+  text-align: left;
+
+  &:hover {
+    background: var(--color-surface-secondary);
+  }
+
+  &--active {
+    background: var(--color-surface-secondary);
+  }
+
+  &__body {
+    display: flex;
+
+    min-width: 0;
+
+    flex-direction: column;
+
+    gap: 4px;
+  }
+
+  &__name,
+  &__preview {
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__preview,
+  &__time {
+    color: var(--color-text-secondary);
+
+    font-size: 13px;
+  }
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+
+  min-height: 64px;
+
+  gap: 12px;
+
+  padding: 0 16px;
+
+  border-bottom: 1px solid var(--color-border);
+}
+
+.message-history {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+
+  padding: 16px;
+
+  &__older {
+    align-self: center;
+
+    padding: 8px 14px;
+
+    border: 1px solid var(--color-border);
+
+    border-radius: 999px;
+
+    background: transparent;
+
+    color: inherit;
+
+    cursor: pointer;
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
+  }
+}
+
+.message-row {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 10px;
+
+  &__body {
+    min-width: 0;
+
+    p {
+      margin: 4px 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    time {
+      color: var(--color-text-secondary);
+
+      font-size: 12px;
+    }
+  }
+
+  &__attachments {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    margin-top: 8px;
+  }
+
+  &__image {
+    display: block;
+
+    width: auto;
+    max-width: 240px;
+    max-height: 240px;
+
+    border-radius: 12px;
+
+    object-fit: cover;
+  }
+}

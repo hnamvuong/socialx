@@ -102,11 +102,11 @@ onMounted(() => {
           </span>
         </RouterLink>
 
-        <span class="main-navigation__item main-navigation__item--disabled">
+        <RouterLink to="/messages" class="main-navigation__item">
           <span class="main-navigation__icon"> M </span>
 
           <span class="main-navigation__label"> Tin nhắn </span>
-        </span>
+        </RouterLink>
 
         <RouterLink to="/bookmarks" class="main-navigation__item">
           <span class="main-navigation__icon"> D </span>

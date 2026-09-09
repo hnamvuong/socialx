@@ -9,6 +9,7 @@ use App\Models\MessageAttachment;
 use App\Models\User;
 use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -224,5 +225,72 @@ class MessageController extends Controller
                     $user->avatar_path
                 ),
         ];
+    }
+
+    public function index(
+        Request $request,
+        Conversation $conversation
+    ): JsonResponse {
+        $user =
+            $request->user();
+
+        $isMember =
+            $conversation
+                ->memberships()
+                ->where(
+                    'user_id',
+                    $user->id
+                )
+                ->exists();
+
+        abort_unless(
+            $isMember,
+            404
+        );
+
+        $paginator =
+            Message::query()
+                ->where(
+                    'conversation_id',
+                    $conversation->id
+                )
+                ->with([
+                    'sender',
+                    'attachments',
+                ])
+                ->orderByDesc(
+                    'id'
+                )
+                ->cursorPaginate(
+                    perPage: 30
+                );
+
+        return response()->json([
+            'data' => [
+                'messages' => collect(
+                    $paginator->items()
+                )
+                    ->map(
+                        fn (
+                            Message $message
+                        ): array => $this->messageData(
+                            $message
+                        )
+                    )
+                    ->values()
+                    ->all(),
+
+                'pagination' => [
+                    'per_page' => $paginator->perPage(),
+
+                    'next_cursor' => $paginator
+                        ->nextCursor()
+                        ?->encode(),
+
+                    'has_more' => $paginator
+                        ->hasMorePages(),
+                ],
+            ],
+        ]);
     }
 }
