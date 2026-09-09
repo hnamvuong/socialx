@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { RouterLink } from 'vue-router'
 
@@ -212,6 +212,41 @@ async function handleMarkAllAsRead(): Promise<void> {
     markingAll.value = false
   }
 }
+
+async function refreshLatestNotifications(): Promise<void> {
+  try {
+    const response = await getNotifications()
+
+    const existingIds = new Set(notifications.value.map((notification) => notification.id))
+
+    const newNotifications = response.data.notifications.filter(
+      (notification) => !existingIds.has(notification.id),
+    )
+
+    if (newNotifications.length === 0) {
+      return
+    }
+
+    notifications.value.unshift(...newNotifications)
+  } catch {
+    /*
+     * Realtime refresh lỗi
+     * không làm hỏng page hiện tại.
+     */
+  }
+}
+
+watch(
+  () => notificationStore.realtimeSequence,
+
+  (current, previous) => {
+    if (current === previous) {
+      return
+    }
+
+    void refreshLatestNotifications()
+  },
+)
 
 onMounted(() => {
   void loadNotifications()

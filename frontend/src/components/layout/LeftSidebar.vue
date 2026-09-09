@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { RouterLink } from 'vue-router'
 
@@ -36,8 +36,30 @@ function handlePostCreated(): void {
   closePostModal()
 }
 
+watch(
+  () => authStore.user?.id,
+
+  (userId) => {
+    if (!userId) {
+      notificationStore.stopRealtime()
+
+      return
+    }
+
+    notificationStore.startRealtime(userId)
+  },
+
+  {
+    immediate: true,
+  },
+)
+
 onMounted(() => {
   void notificationStore.fetchUnreadCount()
+
+  if (authStore.user?.id) {
+    notificationStore.startRealtime(authStore.user.id)
+  }
 })
 </script>
 
