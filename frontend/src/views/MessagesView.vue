@@ -25,6 +25,13 @@ interface RealtimeMessageSent {
   sender_id: number
 }
 
+interface RealtimeTypingEvent {
+  user_id: number
+  username: string
+  display_name: string | null
+  typing: boolean
+}
+
 const route = useRoute()
 
 const router = useRouter()
@@ -155,6 +162,10 @@ async function loadConversations(): Promise<void> {
 }
 
 async function selectConversation(conversation: Conversation): Promise<void> {
+  stopTyping()
+
+  clearRemoteTyping()
+
   if (selectedConversation.value?.id !== conversation.id) {
     resetComposer()
   }
@@ -347,6 +358,8 @@ async function handleSendMessage(): Promise<void> {
 
   sendError.value = null
 
+  stopTyping()
+
   try {
     const formData = new FormData()
 
@@ -415,6 +428,10 @@ function handleComposerKeydown(event: KeyboardEvent): void {
 }
 
 async function closeConversation(): Promise<void> {
+  stopTyping()
+
+  clearRemoteTyping()
+
   selectedConversation.value = null
 
   messages.value = []
@@ -437,11 +454,15 @@ function subscribeToConversation(conversationId: number): void {
 
   realtimeConversationIds.add(conversationId)
 
-  echo
-    .private(`conversations.${conversationId}`)
-    .listen('.message.sent', (event: RealtimeMessageSent) => {
-      void handleRealtimeMessage(event)
-    })
+  const channel = echo.private(`conversations.${conversationId}`)
+
+  channel.listen('.message.sent', (event: RealtimeMessageSent) => {
+    void handleRealtimeMessage(event)
+  })
+
+  channel.listenForWhisper('typing', (event: RealtimeTypingEvent) => {
+    handleRealtimeTyping(conversationId, event)
+  })
 }
 
 function syncRealtimeSubscriptions(): void {
@@ -600,6 +621,118 @@ async function openUserProfile(username: string): Promise<void> {
   await router.push(`/@${username}`)
 }
 
+const typingUser = ref<RealtimeTypingEvent | null>(null)
+
+let typingStopTimer: ReturnType<typeof setTimeout> | null = null
+
+let remoteTypingTimer: ReturnType<typeof setTimeout> | null = null
+
+let typingSent = false
+
+function sendTypingState(typing: boolean): void {
+  const conversation = selectedConversation.value
+
+  const currentUser = authStore.user
+
+  if (!conversation || !currentUser) {
+    return
+  }
+
+  echo.private(`conversations.${conversation.id}`).whisper('typing', {
+    user_id: currentUser.id,
+
+    username: currentUser.username,
+
+    display_name: currentUser.display_name ?? null,
+
+    typing,
+  })
+}
+
+function handleComposerInput(): void {
+  if (composerBody.value.trim().length === 0) {
+    stopTyping()
+
+    return
+  }
+
+  if (!typingSent) {
+    typingSent = true
+
+    sendTypingState(true)
+  }
+
+  if (typingStopTimer) {
+    clearTimeout(typingStopTimer)
+  }
+
+  typingStopTimer = setTimeout(() => {
+    stopTyping()
+  }, 1500)
+}
+
+function stopTyping(): void {
+  if (typingStopTimer) {
+    clearTimeout(typingStopTimer)
+
+    typingStopTimer = null
+  }
+
+  if (!typingSent) {
+    return
+  }
+
+  typingSent = false
+
+  sendTypingState(false)
+}
+
+function handleRealtimeTyping(conversationId: number, event: RealtimeTypingEvent): void {
+  if (event.user_id === authStore.user?.id) {
+    return
+  }
+
+  if (selectedConversation.value?.id !== conversationId) {
+    return
+  }
+
+  if (!event.typing) {
+    clearRemoteTyping()
+
+    return
+  }
+
+  typingUser.value = event
+
+  if (remoteTypingTimer) {
+    clearTimeout(remoteTypingTimer)
+  }
+
+  remoteTypingTimer = setTimeout(() => {
+    clearRemoteTyping()
+  }, 3000)
+}
+
+function clearRemoteTyping(): void {
+  if (remoteTypingTimer) {
+    clearTimeout(remoteTypingTimer)
+
+    remoteTypingTimer = null
+  }
+
+  typingUser.value = null
+}
+
+const typingText = computed((): string => {
+  if (!typingUser.value) {
+    return ''
+  }
+
+  const name = typingUser.value.display_name ?? typingUser.value.username
+
+  return `${name} đang nhập...`
+})
+
 onMounted(() => {
   void initializePage()
 })
@@ -623,6 +756,10 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  stopTyping()
+
+  clearRemoteTyping()
+
   stopRealtime()
 
   stopInboxRealtime()
@@ -801,6 +938,18 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
+          <div
+            class="typing-indicator"
+            :class="{
+              'typing-indicator--visible': !!typingUser,
+            }"
+            aria-live="polite"
+          >
+            <span v-if="typingUser">
+              {{ typingText }}
+            </span>
+          </div>
+
           <form class="chat-composer" @submit.prevent="handleSendMessage">
             <div v-if="imagePreviews.length > 0" class="chat-composer__previews">
               <div
@@ -860,6 +1009,7 @@ onBeforeUnmount(() => {
                 rows="1"
                 placeholder="Nhập tin nhắn..."
                 :disabled="sendingMessage"
+                @input="handleComposerInput"
                 @keydown="handleComposerKeydown"
               />
 
