@@ -1,11 +1,7 @@
 <script setup lang="ts">
-import {
-  computed,
-  ref,
-  watch,
-} from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import axios from 'axios'
 
@@ -23,30 +19,24 @@ import EditProfileModal from '@/components/profile/EditProfileModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 
-import {
-  getUserProfile,
-} from '@/services/userService'
+import { getUserProfile } from '@/services/userService'
 
-import {
-  followUser,
-  unfollowUser,
-} from '@/services/followService'
+import { followUser, unfollowUser } from '@/services/followService'
 
-import type {
-  PublicUserProfile,
-} from '@/types/user'
+import type { PublicUserProfile } from '@/types/user'
+import { createDirectConversation } from '@/services/conversationService'
 
 const route = useRoute()
 
-const user =
-  ref<PublicUserProfile | null>(null)
+const router = useRouter()
+
+const user = ref<PublicUserProfile | null>(null)
 
 const loading = ref(true)
 
 const notFound = ref(false)
 
-const errorMessage =
-  ref<string | null>(null)
+const errorMessage = ref<string | null>(null)
 
 const authStore = useAuthStore()
 
@@ -57,12 +47,9 @@ const editProfileOpen = ref(false)
 const followLoading = ref(false)
 
 function getUsername(): string {
-  const username =
-    route.params.username
+  const username = route.params.username
 
-  return Array.isArray(username)
-    ? username[0] ?? ''
-    : username ?? ''
+  return Array.isArray(username) ? (username[0] ?? '') : (username ?? '')
 }
 
 async function loadProfile(): Promise<void> {
@@ -84,14 +71,10 @@ async function loadProfile(): Promise<void> {
 
     user.value = response.data.user
   } catch (error: unknown) {
-    if (
-      axios.isAxiosError(error) &&
-      error.response?.status === 404
-    ) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
       notFound.value = true
     } else {
-      errorMessage.value =
-        'Không thể tải thông tin người dùng.'
+      errorMessage.value = 'Không thể tải thông tin người dùng.'
     }
   } finally {
     loading.value = false
@@ -99,50 +82,30 @@ async function loadProfile(): Promise<void> {
 }
 
 const isOwnProfile = computed(() => {
-  return (
-    !!user.value &&
-    !!authStore.user &&
-    user.value.username ===
-      authStore.user.username
-  )
+  return !!user.value && !!authStore.user && user.value.username === authStore.user.username
 })
 
-function handleProfileUpdated(
-  updatedUser: PublicUserProfile,
-): void {
+function handleProfileUpdated(updatedUser: PublicUserProfile): void {
   user.value = updatedUser
 
   editProfileOpen.value = false
 
-  toastStore.success(
-    'Đã cập nhật hồ sơ.',
-  )
+  toastStore.success('Đã cập nhật hồ sơ.')
 }
 
-function handleProfileMediaUpdated(
-  updatedUser: PublicUserProfile,
-): void {
+function handleProfileMediaUpdated(updatedUser: PublicUserProfile): void {
   user.value = updatedUser
 
-  toastStore.success(
-    'Đã cập nhật hình ảnh hồ sơ.'
-  )
+  toastStore.success('Đã cập nhật hình ảnh hồ sơ.')
 }
 
 async function handleFollowToggle(): Promise<void> {
-  if (
-    followLoading.value
-    || !user.value
-  ) {
+  if (followLoading.value || !user.value) {
     return
   }
 
-  if (
-    !authStore.isAuthenticated
-  ) {
-    toastStore.error(
-      'Bạn cần đăng nhập để theo dõi người dùng.',
-    )
+  if (!authStore.isAuthenticated) {
+    toastStore.error('Bạn cần đăng nhập để theo dõi người dùng.')
 
     return
   }
@@ -191,27 +154,15 @@ async function handleFollowToggle(): Promise<void> {
 
     currentUser.follow_requested = false
 
-    if (
-      previousRelationship
-        === 'following'
-    ) {
-      currentUser.followers_count =
-        Math.max(
-          0,
-          previousFollowersCount - 1,
-        )
+    if (previousRelationship === 'following') {
+      currentUser.followers_count = Math.max(0, previousFollowersCount - 1)
     }
   }
 
   try {
-    const response =
-      shouldFollow
-        ? await followUser(
-            currentUser.id,
-          )
-        : await unfollowUser(
-            currentUser.id,
-          )
+    const response = shouldFollow
+      ? await followUser(currentUser.id)
+      : await unfollowUser(currentUser.id)
 
     const serverRelationship = response.data.relationship
 
@@ -231,21 +182,10 @@ async function handleFollowToggle(): Promise<void> {
      * Vì vậy count được tính từ trạng thái
      * trước request và trạng thái server xác nhận.
      */
-    if (
-      !wasFollowing
-      && isFollowing
-    ) {
-      currentUser.followers_count =
-        previousFollowersCount + 1
-    } else if (
-      wasFollowing
-      && !isFollowing
-    ) {
-      currentUser.followers_count =
-        Math.max(
-          0,
-          previousFollowersCount - 1,
-        )
+    if (!wasFollowing && isFollowing) {
+      currentUser.followers_count = previousFollowersCount + 1
+    } else if (wasFollowing && !isFollowing) {
+      currentUser.followers_count = Math.max(0, previousFollowersCount - 1)
     } else {
       currentUser.followers_count = previousFollowersCount
     }
@@ -261,47 +201,83 @@ async function handleFollowToggle(): Promise<void> {
 
     currentUser.followers_count = previousFollowersCount
 
-    if (
-      axios.isAxiosError(error)
-      && error.response?.status === 401
-    ) {
-      toastStore.error(
-        'Phiên đăng nhập không còn hợp lệ.',
-      )
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      toastStore.error('Phiên đăng nhập không còn hợp lệ.')
 
       return
     }
 
-    if (
-      axios.isAxiosError(error)
-      && error.response?.status === 404
-    ) {
-      toastStore.error(
-        'Người dùng không còn khả dụng.',
-      )
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      toastStore.error('Người dùng không còn khả dụng.')
 
       return
     }
 
-    if (
-      axios.isAxiosError(error)
-      && error.response?.status === 422
-    ) {
-      toastStore.error(
-        'Không thể theo dõi tài khoản này.',
-      )
+    if (axios.isAxiosError(error) && error.response?.status === 422) {
+      toastStore.error('Không thể theo dõi tài khoản này.')
 
       return
     }
 
     toastStore.error(
-      shouldFollow
-        ? 'Không thể theo dõi người dùng.'
-        : 'Không thể cập nhật trạng thái theo dõi.',
+      shouldFollow ? 'Không thể theo dõi người dùng.' : 'Không thể cập nhật trạng thái theo dõi.',
     )
   } finally {
-    followLoading.value =
-      false
+    followLoading.value = false
+  }
+}
+
+const startingConversation = ref(false)
+
+async function startDirectMessage(): Promise<void> {
+  if (startingConversation.value || !user.value) {
+    return
+  }
+
+  if (!authStore.isAuthenticated) {
+    toastStore.error('Bạn cần đăng nhập để nhắn tin.')
+
+    return
+  }
+
+  if (isOwnProfile.value) {
+    return
+  }
+
+  startingConversation.value = true
+
+  try {
+    const conversation = await createDirectConversation(user.value.id)
+
+    await router.push({
+      path: '/messages',
+
+      query: {
+        conversation: String(conversation.id),
+      },
+    })
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      toastStore.error('Phiên đăng nhập không còn hợp lệ.')
+
+      return
+    }
+
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      toastStore.error('Người dùng không còn khả dụng.')
+
+      return
+    }
+
+    if (axios.isAxiosError(error) && error.response?.status === 422) {
+      toastStore.error('Không thể tạo cuộc trò chuyện với tài khoản này.')
+
+      return
+    }
+
+    toastStore.error('Không thể mở cuộc trò chuyện.')
+  } finally {
+    startingConversation.value = false
   }
 }
 
@@ -325,148 +301,85 @@ watch(
             {{ user?.display_name || 'Hồ sơ' }}
           </strong>
 
-          <div
-            v-if="user"
-            class="profile-page__topbar-username"
-          >
-            @{{ user.username }}
-          </div>
+          <div v-if="user" class="profile-page__topbar-username">@{{ user.username }}</div>
         </div>
       </header>
 
       <template v-if="loading">
         <div class="profile-page__loading-cover">
-          <AppSkeleton
-            width="100%"
-            height="100%"
-            radius="0"
-          />
+          <AppSkeleton width="100%" height="100%" radius="0" />
         </div>
 
         <div class="profile-page__loading-content">
-          <AppSkeleton
-            width="136px"
-            height="136px"
-            radius="50%"
-          />
+          <AppSkeleton width="136px" height="136px" radius="50%" />
 
-          <AppSkeleton
-            width="180px"
-            height="22px"
-          />
+          <AppSkeleton width="180px" height="22px" />
 
-          <AppSkeleton
-            width="120px"
-            height="14px"
-          />
+          <AppSkeleton width="120px" height="14px" />
 
-          <AppSkeleton
-            width="85%"
-            height="14px"
-          />
+          <AppSkeleton width="85%" height="14px" />
         </div>
       </template>
 
       <template v-else-if="user">
-        <ProfileHeader
-          :user="user"
-        >
+        <ProfileHeader :user="user">
           <template #actions>
-            <AppButton
-              v-if="isOwnProfile"
-              variant="secondary"
-              @click="
-                editProfileOpen = true
-              "
-            >
+            <AppButton v-if="isOwnProfile" variant="secondary" @click="editProfileOpen = true">
               Chỉnh sửa hồ sơ
             </AppButton>
 
-            <FollowButton
-              v-else
-              :relationship="
-                user.relationship
-              "
-              :loading="
-                followLoading
-              "
-              @toggle="
-                handleFollowToggle
-              "
-            />
+            <div v-else class="profile-page__actions">
+              <FollowButton
+                :relationship="user.relationship"
+                :loading="followLoading"
+                @toggle="handleFollowToggle"
+              />
+
+              <AppButton
+                type="button"
+                variant="secondary"
+                :disabled="startingConversation"
+                @click="startDirectMessage"
+              >
+                {{ startingConversation ? 'Đang mở...' : 'Nhắn tin' }}
+              </AppButton>
+            </div>
           </template>
         </ProfileHeader>
 
-        <ProfileDetails
-          :user="user"
-        />
+        <ProfileDetails :user="user" />
 
         <div class="profile-page__content-placeholder">
           Nội dung của người dùng sẽ được bổ sung khi hệ thống Post được xây dựng.
         </div>
       </template>
 
-      <div
-        v-else-if="notFound"
-        class="profile-page__state"
-      >
-        <h1>
-          Không tìm thấy tài khoản
-        </h1>
+      <div v-else-if="notFound" class="profile-page__state">
+        <h1>Không tìm thấy tài khoản</h1>
 
-        <p>
-          Người dùng này không tồn tại hoặc hiện không khả dụng.
-        </p>
+        <p>Người dùng này không tồn tại hoặc hiện không khả dụng.</p>
       </div>
 
-      <div
-        v-else
-        class="profile-page__state"
-      >
-        <h1>
-          Đã xảy ra lỗi
-        </h1>
+      <div v-else class="profile-page__state">
+        <h1>Đã xảy ra lỗi</h1>
 
         <p>
           {{ errorMessage }}
         </p>
 
-        <AppButton
-          variant="secondary"
-          @click="
-            loadProfile
-          "
-        >
-          Thử lại
-        </AppButton>
+        <AppButton variant="secondary" @click="loadProfile"> Thử lại </AppButton>
       </div>
     </section>
 
     <EditProfileModal
-      v-if="
-        user
-        && isOwnProfile
-      "
-      :open="
-        editProfileOpen
-      "
-      :user="
-        user
-      "
-      @close="
-        editProfileOpen = false
-      "
-      @updated="
-        handleProfileUpdated
-      "
-      @media-updated="
-        handleProfileMediaUpdated
-      "
+      v-if="user && isOwnProfile"
+      :open="editProfileOpen"
+      :user="user"
+      @close="editProfileOpen = false"
+      @updated="handleProfileUpdated"
+      @media-updated="handleProfileMediaUpdated"
     />
   </MainLayout>
 </template>
 
-<style
-  lang="scss"
-  src="@/assets/styles/views/ProfileView.scss"
-></style>
+<style lang="scss" src="@/assets/styles/views/ProfileView.scss"></style>

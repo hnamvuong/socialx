@@ -17,3 +17,15 @@ export async function getConversation(conversationId: number): Promise<Conversat
 
   return response.data.data.conversation
 }
+
+export async function createDirectConversation(userId: number): Promise<Conversation> {
+  const response = await api.post<{
+    data: {
+      conversation: Conversation
+    }
+  }>('/conversations/direct', {
+    user_id: userId,
+  })
+
+  return response.data.data.conversation
+}

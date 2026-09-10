@@ -14,25 +14,19 @@
 
     min-height: 56px;
 
-    padding:
-      8px
-      16px;
+    padding: 8px 16px;
 
-    border-bottom:
-      1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
 
-    background:
-      var(--color-overlay-background);
+    background: var(--color-overlay-background);
 
-    backdrop-filter:
-      blur(12px);
+    backdrop-filter: blur(12px);
   }
 
   &__topbar-username {
     margin-top: 2px;
 
-    color:
-      var(--color-text-secondary);
+    color: var(--color-text-secondary);
 
     font-size: 12px;
   }
@@ -49,9 +43,7 @@
 
     gap: 12px;
 
-    padding:
-      20px
-      16px;
+    padding: 20px 16px;
   }
 
   &__state {
@@ -61,9 +53,7 @@
 
     gap: 12px;
 
-    padding:
-      80px
-      24px;
+    padding: 80px 24px;
 
     text-align: center;
 
@@ -78,27 +68,30 @@
 
       margin: 0;
 
-      color:
-        var(--color-text-secondary);
+      color: var(--color-text-secondary);
 
       line-height: 1.5;
     }
   }
 
   &__content-placeholder {
-    padding:
-      40px
-      24px;
+    padding: 40px 24px;
 
-    border-top:
-      1px solid var(--color-border);
+    border-top: 1px solid var(--color-border);
 
-    color:
-      var(--color-text-secondary);
+    color: var(--color-text-secondary);
 
     text-align: center;
 
     font-size: 14px;
+  }
+
+  &__actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
   }
 
   @include mobile {

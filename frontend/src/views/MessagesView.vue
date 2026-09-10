@@ -596,6 +596,10 @@ async function handleInboxRealtimeMessage(event: RealtimeMessageSent): Promise<v
   await refreshConversationList()
 }
 
+async function openUserProfile(username: string): Promise<void> {
+  await router.push(`/@${username}`)
+}
+
 onMounted(() => {
   void initializePage()
 })
@@ -703,21 +707,20 @@ onBeforeUnmount(() => {
         <template v-if="selectedConversation">
           <header class="chat-header">
             <button
+              v-if="selectedConversation.other_member"
               type="button"
-              class="chat-header__back"
-              aria-label="
-                Quay lại danh sách tin nhắn
-              "
-              @click="closeConversation"
+              class="chat-header__profile"
+              :aria-label="`Xem hồ sơ ${memberName(selectedConversation)}`"
+              @click="openUserProfile(selectedConversation.other_member.username)"
             >
-              ←
+              <AppAvatar
+                :src="selectedConversation.other_member.avatar_url ?? null"
+                :name="memberName(selectedConversation)"
+                :size="40"
+              />
             </button>
 
-            <AppAvatar
-              :src="selectedConversation.other_member?.avatar_url ?? null"
-              :name="memberName(selectedConversation)"
-              :size="40"
-            />
+            <AppAvatar v-else :src="null" :name="memberName(selectedConversation)" :size="40" />
 
             <strong>
               {{ memberName(selectedConversation) }}
