@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\ConversationMember;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -435,5 +437,78 @@ class SendMessageApiTest extends TestCase
             "/api/conversations/{$conversation->id}/messages"
         )
             ->assertNotFound();
+    }
+
+    public function test_sending_message_dispatches_realtime_event(): void
+    {
+        Event::fake([
+            MessageSent::class,
+        ]);
+
+        $alice =
+            User::factory()
+                ->create();
+
+        $bob =
+            User::factory()
+                ->create();
+
+        $conversation =
+            $this->createDirectConversation(
+                $alice,
+                $bob
+            );
+
+        Sanctum::actingAs(
+            $alice
+        );
+
+        $response =
+            $this->postJson(
+                "/api/conversations/{$conversation->id}/messages",
+                [
+                    'body' => 'Realtime message',
+                ]
+            );
+
+        $response
+            ->assertCreated();
+
+        $messageId =
+            $response->json(
+                'data.message.id'
+            );
+
+        Event::assertDispatched(
+            MessageSent::class,
+            function (
+                MessageSent $event
+            ) use (
+                $messageId,
+                $conversation,
+                $alice,
+                $bob
+            ): bool {
+                return
+                    $event->message->id
+                        === $messageId
+
+                    && $event
+                        ->message
+                        ->conversation_id
+                        === $conversation->id
+
+                    && $event
+                        ->message
+                        ->sender_id
+                        === $alice->id
+
+                    && $event
+                        ->recipientIds
+                        === [
+                            $bob->id,
+                        ];
+            }
+        );
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageSent;
 use App\Http\Requests\SendMessageRequest;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -143,6 +144,28 @@ class MessageController extends Controller
 
             throw $exception;
         }
+
+        $recipientIds =
+            $conversation
+                ->memberships()
+                ->where(
+                    'user_id',
+                    '!=',
+                    $user->id
+                )
+                ->pluck(
+                    'user_id'
+                )
+                ->map(
+                    fn ($id): int => (int) $id
+                )
+                ->values()
+                ->all();
+
+        MessageSent::dispatch(
+            $message,
+            $recipientIds
+        );
 
         return response()->json(
             [

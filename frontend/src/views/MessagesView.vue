@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useRoute, useRouter } from 'vue-router'
 
@@ -9,6 +9,8 @@ import MainLayout from '@/layouts/MainLayout.vue'
 
 import { getConversations } from '@/services/conversationService'
 
+import echo from '@/services/echo'
+
 import { getMessages, sendMessage } from '@/services/messageService'
 
 import { useAuthStore } from '@/stores/auth'
@@ -16,6 +18,12 @@ import { useAuthStore } from '@/stores/auth'
 import type { Conversation } from '@/types/conversation'
 
 import type { Message } from '@/types/message'
+
+interface RealtimeMessageSent {
+  message_id: number
+  conversation_id: number
+  sender_id: number
+}
 
 const route = useRoute()
 
@@ -56,6 +64,12 @@ const sendError = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 
 const messageHistoryElement = ref<HTMLElement | null>(null)
+
+const realtimeConversationIds = new Set<number>()
+
+const realtimeUnreadConversationIds = ref<number[]>([])
+
+let realtimeInboxUserId: number | null = null
 
 const selectedConversationId = computed((): number | null => {
   const raw = route.query.conversation
@@ -129,6 +143,8 @@ async function loadConversations(): Promise<void> {
 
   try {
     conversations.value = await getConversations()
+
+    syncRealtimeSubscriptions()
   } catch {
     conversations.value = []
 
@@ -144,6 +160,8 @@ async function selectConversation(conversation: Conversation): Promise<void> {
   }
 
   selectedConversation.value = conversation
+
+  clearRealtimeUnread(conversation.id)
 
   await router.replace({
     path: '/messages',
@@ -344,7 +362,7 @@ async function handleSendMessage(): Promise<void> {
 
     const message = await sendMessage(conversation.id, formData)
 
-    messages.value.push(message)
+    appendMessageIfMissing(message)
 
     updateConversationAfterSend(conversation, message)
 
@@ -412,11 +430,199 @@ async function closeConversation(): Promise<void> {
   })
 }
 
+function subscribeToConversation(conversationId: number): void {
+  if (realtimeConversationIds.has(conversationId)) {
+    return
+  }
+
+  realtimeConversationIds.add(conversationId)
+
+  echo
+    .private(`conversations.${conversationId}`)
+    .listen('.message.sent', (event: RealtimeMessageSent) => {
+      void handleRealtimeMessage(event)
+    })
+}
+
+function syncRealtimeSubscriptions(): void {
+  const currentIds = new Set(conversations.value.map((conversation) => conversation.id))
+
+  for (const conversationId of realtimeConversationIds) {
+    if (currentIds.has(conversationId)) {
+      continue
+    }
+
+    echo.leave(`conversations.${conversationId}`)
+
+    realtimeConversationIds.delete(conversationId)
+  }
+
+  for (const conversation of conversations.value) {
+    subscribeToConversation(conversation.id)
+  }
+}
+
+function stopRealtime(): void {
+  for (const conversationId of realtimeConversationIds) {
+    echo.leave(`conversations.${conversationId}`)
+  }
+
+  realtimeConversationIds.clear()
+}
+
+function appendMessageIfMissing(message: Message): boolean {
+  const exists = messages.value.some((current) => current.id === message.id)
+
+  if (exists) {
+    return false
+  }
+
+  messages.value.push(message)
+
+  return true
+}
+
+async function handleRealtimeMessage(event: RealtimeMessageSent): Promise<void> {
+  const activeConversationId = selectedConversation.value?.id
+
+  if (activeConversationId !== event.conversation_id) {
+    return
+  }
+
+  await refreshActiveConversation(event)
+}
+
+async function refreshActiveConversation(event: RealtimeMessageSent): Promise<void> {
+  try {
+    const response = await getMessages(event.conversation_id)
+
+    const incomingMessage = response.messages.find((message) => message.id === event.message_id)
+
+    if (!incomingMessage) {
+      return
+    }
+
+    const appended = appendMessageIfMissing(incomingMessage)
+
+    if (!appended) {
+      return
+    }
+
+    await scrollToBottom()
+  } catch {
+    /*
+     * WebSocket refresh lỗi không
+     * phá history hiện tại.
+     */
+  }
+}
+
+async function refreshConversationList(): Promise<void> {
+  try {
+    const refreshed = await getConversations()
+
+    const selectedId = selectedConversation.value?.id
+
+    conversations.value = refreshed
+
+    if (selectedId) {
+      const refreshedSelected = refreshed.find((conversation) => conversation.id === selectedId)
+
+      if (refreshedSelected) {
+        selectedConversation.value = refreshedSelected
+      }
+    }
+
+    syncRealtimeSubscriptions()
+  } catch {
+    /*
+     * Realtime refresh lỗi không
+     * xóa conversation list hiện tại.
+     */
+  }
+}
+
+function hasRealtimeUnread(conversationId: number): boolean {
+  return realtimeUnreadConversationIds.value.includes(conversationId)
+}
+
+function markRealtimeUnread(conversationId: number): void {
+  if (hasRealtimeUnread(conversationId)) {
+    return
+  }
+
+  realtimeUnreadConversationIds.value.push(conversationId)
+}
+
+function clearRealtimeUnread(conversationId: number): void {
+  realtimeUnreadConversationIds.value = realtimeUnreadConversationIds.value.filter(
+    (id) => id !== conversationId,
+  )
+}
+
+function startInboxRealtime(userId: number): void {
+  if (realtimeInboxUserId === userId) {
+    return
+  }
+
+  if (realtimeInboxUserId !== null) {
+    echo.leave(`inbox.${realtimeInboxUserId}`)
+  }
+
+  realtimeInboxUserId = userId
+
+  echo.private(`inbox.${userId}`).listen('.message.sent', (event: RealtimeMessageSent) => {
+    void handleInboxRealtimeMessage(event)
+  })
+}
+
+function stopInboxRealtime(): void {
+  if (realtimeInboxUserId === null) {
+    return
+  }
+
+  echo.leave(`inbox.${realtimeInboxUserId}`)
+
+  realtimeInboxUserId = null
+}
+
+async function handleInboxRealtimeMessage(event: RealtimeMessageSent): Promise<void> {
+  const activeConversationId = selectedConversation.value?.id
+
+  if (activeConversationId !== event.conversation_id) {
+    markRealtimeUnread(event.conversation_id)
+  }
+
+  await refreshConversationList()
+}
+
 onMounted(() => {
   void initializePage()
 })
 
+watch(
+  () => authStore.user?.id,
+
+  (userId) => {
+    if (!userId) {
+      stopInboxRealtime()
+
+      return
+    }
+
+    startInboxRealtime(userId)
+  },
+
+  {
+    immediate: true,
+  },
+)
+
 onBeforeUnmount(() => {
+  stopRealtime()
+
+  stopInboxRealtime()
+
   revokeImagePreviews()
 })
 </script>
@@ -453,6 +659,7 @@ onBeforeUnmount(() => {
           class="conversation-item"
           :class="{
             'conversation-item--active': selectedConversation?.id === conversation.id,
+            'conversation-item--unread': hasRealtimeUnread(conversation.id),
           }"
           @click="selectConversation(conversation)"
         >
@@ -472,13 +679,23 @@ onBeforeUnmount(() => {
             </span>
           </span>
 
-          <time
-            v-if="conversation.last_message"
-            class="conversation-item__time"
-            :datetime="conversation.last_message.created_at"
-          >
-            {{ formatTime(conversation.last_message.created_at) }}
-          </time>
+          <span class="conversation-item__meta">
+            <time
+              v-if="conversation.last_message"
+              class="conversation-item__time"
+              :datetime="conversation.last_message.created_at"
+            >
+              {{ formatTime(conversation.last_message.created_at) }}
+            </time>
+
+            <span
+              v-if="hasRealtimeUnread(conversation.id)"
+              class="conversation-item__unread-dot"
+              aria-label="
+      Có tin nhắn mới
+    "
+            />
+          </span>
         </button>
       </aside>
 

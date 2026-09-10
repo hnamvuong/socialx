@@ -133,6 +133,36 @@
 
     font-size: 13px;
   }
+
+  &--unread {
+    .conversation-item__name,
+    .conversation-item__preview {
+      font-weight: 700;
+    }
+  }
+
+  &__meta {
+    display: flex;
+
+    min-width: 40px;
+
+    flex-direction: column;
+
+    align-items: flex-end;
+
+    gap: 8px;
+  }
+
+  &__unread-dot {
+    display: block;
+
+    width: 8px;
+    height: 8px;
+
+    border-radius: 50%;
+
+    background: currentColor;
+  }
 }
 
 .chat-header {
